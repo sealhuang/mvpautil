@@ -187,9 +187,9 @@ def calculate_group_roi_mvpa_reliability():
         roi_mask[roi_mask==roi] = 1
         mask_coord = niroi.get_roi_coord(roi_mask)
         # get subject-specific cope data
+        start_time = time.time()
         for subj in sessid:
             print subj
-            start_time = time.time()
             temp = [subj]
             subj_dir = os.path.join(cope_db_dir, subj, 'obj')
             rlf_file = os.path.join(subj_dir, 'obj.rlf')
@@ -317,7 +317,7 @@ def calculate_group_roi_mvpa_reliability():
             else:
                 v = tmp_corr
             temp.append(str(v))
-        f.write(','.join(temp)+'\n')
+            f.write(','.join(temp)+'\n')
         print 'cost %s s'%(time.time() - start_time)
 
 def mvpa_data_merge():
