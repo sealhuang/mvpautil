@@ -169,7 +169,7 @@ def calculate_group_roi_mvpa_reliability():
 
     roi_list = {1:'rOFA', 2:'lOFA',
                 3:'rFFA', 4:'lFFA',
-                7:'rpcSTS', 8:'lpcSTS']
+                7:'rpcSTS', 8:'lpcSTS'}
 
     sessid_file = os.path.join(doc_dir, 'sessid_06')
     sessid = open(sessid_file).readlines()
@@ -781,12 +781,12 @@ if __name__ == '__main__':
     #z2r()
     #calculate_roi_mvpa()
     #calculate_group_roi_mvpa()
-    calculate_mvpa_sess()
+    #calculate_mvpa_sess()
     #calculate_mvpa_reliability_sess()
     #calculate_roi_mean_mvpa_devel()
     #calculate_roi_mean_mvpa()
     #calculate_group_roi_mean_mvpa()
     #calculate_roi_mvpa_devel()
     #calculate_group_roi_mvpa()
-    #calculate_group_roi_mvpa_reliability()
+    calculate_group_roi_mvpa_reliability()
 
