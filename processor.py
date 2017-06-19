@@ -575,7 +575,7 @@ def calculate_group_roi_mvpa():
     roi_dir = os.path.join(base_dir, 'mask')
     doc_dir = os.path.join(base_dir, 'doc')
 
-    mask_file = os.path.join(roi_dir, 'func_group', 'func_mask_258.nii.gz')
+    mask_file = os.path.join(roi_dir, 'func_group', 'neo_func_mask_258.nii.gz')
     mask_data = nib.load(mask_file).get_data()
 
     roi_list = [1, 2, 3, 4, 7, 8]
@@ -584,7 +584,7 @@ def calculate_group_roi_mvpa():
     sessid = open(sessid_file).readlines()
     sessid = [line.strip() for line in sessid]
 
-    cope_db_dir = r'/nfs/h2/fmricenter/volume'
+    cope_db_dir = r'/nfs/t3/workingshop/huanglijie/fmri/face/volume'
 
     output_file = os.path.join(roi_dir, 'neo_group_roi_mvpa.csv')
     f = open(output_file, 'wb')
@@ -605,6 +605,7 @@ def calculate_group_roi_mvpa():
         # remove mean cope
         face_cope = face_cope - mean_cope
         object_cope = object_cope - mean_cope
+        scene_cope = scene_cope - mean_cope
         scramble_cope = scramble_cope - mean_cope
 
         # calculate mvpa index for each roi
@@ -618,10 +619,12 @@ def calculate_group_roi_mvpa():
             mask_coord = niroi.get_roi_coord(roi_mask)
             face_vtr = niroi.get_voxel_value(mask_coord, face_cope)
             object_vtr = niroi.get_voxel_value(mask_coord, object_cope)
+            scene_vtr = niroi.get_voxel_value(mask_coord, scene_cope)
             scramble_vtr = niroi.get_voxel_value(mask_coord, scramble_cope)
-            mvpa_index = np.corrcoef(face_vtr, object_vtr)[0, 1]
+            #mvpa_index = np.corrcoef(face_vtr, object_vtr)[0, 1]
             #mvpa_index = np.corrcoef(face_vtr, scramble_vtr)[0, 1]
             #mvpa_index = np.corrcoef(object_vtr, scramble_vtr)[0, 1]
+            mvpa_index = np.corrcoef(face_vtr, scene_vtr)[0, 1]
             if np.isnan(mvpa_index):
                 v = 'nan'
             else:
@@ -788,6 +791,6 @@ if __name__ == '__main__':
     #calculate_roi_mean_mvpa()
     #calculate_group_roi_mean_mvpa()
     #calculate_roi_mvpa_devel()
-    #calculate_group_roi_mvpa()
-    calculate_group_roi_mvpa_reliability()
+    calculate_group_roi_mvpa()
+    #calculate_group_roi_mvpa_reliability()
 
