@@ -8,8 +8,8 @@ import time
 import functools
 from multiprocessing import Pool
 
-from nipytools import base as nibase
-from nipytools import roi as niroi
+from nitools import base as nibase
+from nitools import roi as niroi
 import util
 
 def calculate_mvpa(subj, db_dir, mask_coord, out_dir, neighbor_size):
@@ -52,11 +52,9 @@ def calculate_mvpa_sess():
 
     """
     base_dir = r'/nfs/t3/workingshop/huanglijie/uni_mul_analysis'
-    data_dir = os.path.join(base_dir, 'multivariate', 'neo_mvpa_n2')
-    #data_dir = os.path.join(base_dir, 'multivariate',
-    #                        'detection', 'child_mvpa_data')
-    targ_dir = os.path.join(data_dir, 'face_obj')
     doc_dir = os.path.join(base_dir, 'doc')
+    data_dir = os.path.join(base_dir, 'multivariate', 'neo_mvpa_n2')
+    targ_dir = os.path.join(data_dir, 'face_obj')
 
     sessid_file = os.path.join(doc_dir, 'sessid_06')
     sessid = open(sessid_file).readlines()
@@ -66,7 +64,6 @@ def calculate_mvpa_sess():
     mask_data = nib.load(mask_file).get_data()
     mask_coord = niroi.get_roi_coord(mask_data)
 
-    #cope_db_dir = r'/nfs/t2/fmricenter/volume'
     cope_db_dir = r'/nfs/t3/workingshop/huanglijie/fmri/face/volume'
     #cope_db_dir = r'/nfs/h2/face_development/fmri'
 
@@ -156,6 +153,171 @@ def calculate_mvpa_reliability_sess():
                                mask_coord=mask_coord, out_dir=data_dir,
                                neighbor_size=2, pair=pair), sessid)
     pool.terminate()
+
+def calculate_group_roi_mvpa_reliability():
+    """
+    Calculate reliability of multi-voxel representation for each object
+    category in group fROI for each subject.
+
+    """
+    base_dir = r'/nfs/t3/workingshop/huanglijie/uni_mul_analysis'
+    roi_dir = os.path.join(base_dir, 'mask')
+    doc_dir = os.path.join(base_dir, 'doc')
+
+    mask_file = os.path.join(roi_dir, 'func_group', 'neo_func_mask_258.nii.gz')
+    mask_data = nib.load(mask_file).get_data()
+
+    roi_list = {1:'rOFA', 2:'lOFA',
+                3:'rFFA', 4:'lFFA',
+                7:'rpcSTS', 8:'lpcSTS']
+
+    sessid_file = os.path.join(doc_dir, 'sessid_06')
+    sessid = open(sessid_file).readlines()
+    sessid = [line.strip() for line in sessid]
+
+    cope_db_dir = r'/nfs/t3/workingshop/huanglijie/fmri/face/volume'
+
+    for roi in roi_list:
+        output_file = 'neo_group_%s_mvpa_reliability.csv'%(roi_list[roi])
+        f = open(output_file, 'wb')
+        f.write('SID,face_1_2,face_1_3,face_2_3,obj_1_2,obj_1_3,obj_2_3,scene_1_2,scene_1_3,scene_2_3,scram_1_2,scram_1_3,scram_2_3\n')
+        # get ROI index
+        roi_mask = mask_data.copy()
+        roi_mask[roi_mask!=roi] = 0
+        roi_mask[roi_mask==roi] = 1
+        mask_coord = niroi.get_roi_coord(roi_mask)
+        # get subject-specific cope data
+        for subj in sessid:
+            print subj
+            start_time = time.time()
+            tmp = [subj]
+            subj_dir = os.path.join(cope_db_dir, subj, 'obj')
+            rlf_file = os.path.join(subj_dir, 'obj.rlf')
+            rlf_info = [line.strip() for line in rlf_info]
+            # get run-1 data
+            raw_file_1 = util.get_single_run_cope(
+                            os.path.join(dubj_dir, rlf_info[0]))
+            face_1 = nib.load(raw_file_1['face']).get_data()
+            object_1 = nib.load(raw_file_1['object']).get_data()
+            scene_1 = nib.load(raw_file_1['scene']).get_data()
+            scramble_1 = nib.load(raw_file_1['scramble']).get_data()
+            mean_cope_1 = (face_1 + object_1 + scene_1 + scramble_1) / 4
+            face_1 = face_1 - mean_cope_1
+            object_1 = object_1 - mean_cope_1
+            scene_1 = scene_1 - mean_cope_1
+            scramble_1 = scramble_1 - mean_cope_1
+            # get run-2 data
+            raw_file_2 = util.get_single_run_cope(
+                            os.path.join(dubj_dir, rlf_info[1]))
+            face_2 = nib.load(raw_file_2['face']).get_data()
+            object_2 = nib.load(raw_file_2['object']).get_data()
+            scene_2 = nib.load(raw_file_2['scene']).get_data()
+            scramble_2 = nib.load(raw_file_2['scramble']).get_data()
+            mean_cope_2 = (face_2 + object_2 + scene_2 + scramble_2) / 4
+            face_2 = face_2 - mean_cope_2
+            object_2 = object_2 - mean_cope_2
+            scene_2 = scene_2 - mean_cope_2
+            scramble_2 = scramble_2 - mean_cope_2
+            # get run-3 data
+            raw_file_3 = util.get_single_run_cope(
+                            os.path.join(dubj_dir, rlf_info[2]))
+            face_3 = nib.load(raw_file_3['face']).get_data()
+            object_3 = nib.load(raw_file_3['object']).get_data()
+            scene_3 = nib.load(raw_file_3['scene']).get_data()
+            scramble_3 = nib.load(raw_file_3['scramble']).get_data()
+            mean_cope_3 = (face_3 + object_3 + scene_3 + scramble_3) / 4
+            face_3 = face_3 - mean_cope_3
+            object_3 = object_3 - mean_cope_3
+            scene_3 = scene_3 - mean_cope_3
+            scramble_3 = scramble_3 - mean_cope_3
+
+            # calculate mvpa reliability
+            face_vtr_1 = niroi.get_voxel_value(mask_coord, face_1)
+            object_vtr_1 = niroi.get_voxel_value(mask_coord, object_1)
+            scene_vtr_1 = niroi.get_voxel_value(mask_coord, scene_1)
+            scramble_vtr_1 = niroi.get_voxel_value(mask_coord, scramble_1)
+            face_vtr_2 = niroi.get_voxel_value(mask_coord, face_2)
+            object_vtr_2 = niroi.get_voxel_value(mask_coord, object_2)
+            scene_vtr_2 = niroi.get_voxel_value(mask_coord, scene_2)
+            scramble_vtr_2 = niroi.get_voxel_value(mask_coord, scramble_2)
+            face_vtr_3 = niroi.get_voxel_value(mask_coord, face_3)
+            object_vtr_3 = niroi.get_voxel_value(mask_coord, object_3)
+            scene_vtr_3 = niroi.get_voxel_value(mask_coord, scene_3)
+            scramble_vtr_3 = niroi.get_voxel_value(mask_coord, scramble_3)
+            tmp_corr = np.corrcoef(face_vtr_1, face_vtr_2)[0, 1]
+            if np.isnan(tmp_corr):
+                v = 'nan'
+            else:
+                v = tmp_corr
+            temp.append(str(v))
+            tmp_corr = np.corrcoef(face_vtr_1, face_vtr_3)[0, 1]
+            if np.isnan(tmp_corr):
+                v = 'nan'
+            else:
+                v = tmp_corr
+            temp.append(str(v))
+            tmp_corr = np.corrcoef(face_vtr_2, face_vtr_3)[0, 1]
+            if np.isnan(tmp_corr):
+                v = 'nan'
+            else:
+                v = tmp_corr
+            temp.append(str(v))
+            tmp_corr = np.corrcoef(object_vtr_1, object_vtr_2)[0, 1]
+            if np.isnan(tmp_corr):
+                v = 'nan'
+            else:
+                v = tmp_corr
+            temp.append(str(v))
+            tmp_corr = np.corrcoef(object_vtr_1, object_vtr_3)[0, 1]
+            if np.isnan(tmp_corr):
+                v = 'nan'
+            else:
+                v = tmp_corr
+            temp.append(str(v))
+            tmp_corr = np.corrcoef(object_vtr_2, object_vtr_3)[0, 1]
+            if np.isnan(tmp_corr):
+                v = 'nan'
+            else:
+                v = tmp_corr
+            temp.append(str(v))
+            tmp_corr = np.corrcoef(scene_vtr_1, scene_vtr_2)[0, 1]
+            if np.isnan(tmp_corr):
+                v = 'nan'
+            else:
+                v = tmp_corr
+            temp.append(str(v))
+            tmp_corr = np.corrcoef(scene_vtr_1, scene_vtr_3)[0, 1]
+            if np.isnan(tmp_corr):
+                v = 'nan'
+            else:
+                v = tmp_corr
+            temp.append(str(v))
+            tmp_corr = np.corrcoef(scene_vtr_2, scene_vtr_3)[0, 1]
+            if np.isnan(tmp_corr):
+                v = 'nan'
+            else:
+                v = tmp_corr
+            temp.append(str(v))
+            tmp_corr = np.corrcoef(scramble_vtr_1, scramble_vtr_2)[0, 1]
+            if np.isnan(tmp_corr):
+                v = 'nan'
+            else:
+                v = tmp_corr
+            temp.append(str(v))
+            tmp_corr = np.corrcoef(scramble_vtr_1, scramble_vtr_3)[0, 1]
+            if np.isnan(tmp_corr):
+                v = 'nan'
+            else:
+                v = tmp_corr
+            temp.append(str(v))
+            tmp_corr = np.corrcoef(scramble_vtr_2, scramble_vtr_3)[0, 1]
+            if np.isnan(tmp_corr):
+                v = 'nan'
+            else:
+                v = tmp_corr
+            temp.append(str(v))
+        f.write(','.join(temp)+'\n')
+        print 'cost %s s'%(time.time() - start_time)
 
 def mvpa_data_merge():
     """
@@ -626,4 +788,5 @@ if __name__ == '__main__':
     #calculate_group_roi_mean_mvpa()
     #calculate_roi_mvpa_devel()
     #calculate_group_roi_mvpa()
+    #calculate_group_roi_mvpa_reliability()
 

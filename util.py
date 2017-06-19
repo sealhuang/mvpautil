@@ -6,7 +6,7 @@ import numpy as np
 import nibabel as nib
 import re
 
-from nipytools import base as mybase
+from nitools import base as mybase
 
 def get_raw_file(db_dir, subj, task):
     """
