@@ -190,13 +190,14 @@ def calculate_group_roi_mvpa_reliability():
         for subj in sessid:
             print subj
             start_time = time.time()
-            tmp = [subj]
+            temp = [subj]
             subj_dir = os.path.join(cope_db_dir, subj, 'obj')
             rlf_file = os.path.join(subj_dir, 'obj.rlf')
+            rlf_info = open(rlf_file).readlines()
             rlf_info = [line.strip() for line in rlf_info]
             # get run-1 data
             raw_file_1 = util.get_single_run_cope(
-                            os.path.join(dubj_dir, rlf_info[0]))
+                            os.path.join(subj_dir, rlf_info[0]))
             face_1 = nib.load(raw_file_1['face']).get_data()
             object_1 = nib.load(raw_file_1['object']).get_data()
             scene_1 = nib.load(raw_file_1['scene']).get_data()
@@ -208,7 +209,7 @@ def calculate_group_roi_mvpa_reliability():
             scramble_1 = scramble_1 - mean_cope_1
             # get run-2 data
             raw_file_2 = util.get_single_run_cope(
-                            os.path.join(dubj_dir, rlf_info[1]))
+                            os.path.join(subj_dir, rlf_info[1]))
             face_2 = nib.load(raw_file_2['face']).get_data()
             object_2 = nib.load(raw_file_2['object']).get_data()
             scene_2 = nib.load(raw_file_2['scene']).get_data()
@@ -220,7 +221,7 @@ def calculate_group_roi_mvpa_reliability():
             scramble_2 = scramble_2 - mean_cope_2
             # get run-3 data
             raw_file_3 = util.get_single_run_cope(
-                            os.path.join(dubj_dir, rlf_info[2]))
+                            os.path.join(subj_dir, rlf_info[2]))
             face_3 = nib.load(raw_file_3['face']).get_data()
             object_3 = nib.load(raw_file_3['object']).get_data()
             scene_3 = nib.load(raw_file_3['scene']).get_data()
