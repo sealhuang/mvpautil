@@ -586,7 +586,7 @@ def calculate_group_roi_mvpa():
 
     cope_db_dir = r'/nfs/t3/workingshop/huanglijie/fmri/face/volume'
 
-    output_file = os.path.join(roi_dir, 'neo_group_roi_mvpa.csv')
+    output_file = r'neo_group_roi_mvpa.csv'
     f = open(output_file, 'wb')
     f.write('SID,rOFA,lOFA,rFFA,lFFA,rpcSTS,lpcSTS\n')
 
@@ -624,7 +624,8 @@ def calculate_group_roi_mvpa():
             #mvpa_index = np.corrcoef(face_vtr, object_vtr)[0, 1]
             #mvpa_index = np.corrcoef(face_vtr, scramble_vtr)[0, 1]
             #mvpa_index = np.corrcoef(object_vtr, scramble_vtr)[0, 1]
-            mvpa_index = np.corrcoef(face_vtr, scene_vtr)[0, 1]
+            #mvpa_index = np.corrcoef(face_vtr, scene_vtr)[0, 1]
+            mvpa_index = np.corrcoef(scene_vtr, scramble_vtr)[0, 1]
             if np.isnan(mvpa_index):
                 v = 'nan'
             else:
