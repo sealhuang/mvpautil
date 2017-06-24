@@ -325,20 +325,19 @@ def mvpa_data_merge():
     Merge data.
 
     """
-    base_dir = r'/nfs/h1/workingshop/huanglijie/uni_mul_analysis'
+    base_dir = r'/nfs/t3/workingshop/huanglijie/uni_mul_analysis'
     doc_dir = os.path.join(base_dir, 'doc')
-    analysis_dir = os.path.join(base_dir, 'multivariate')
-    data_dir = os.path.join(analysis_dir, 'detection', 'child_mvpa_data',
-                            'face_obj')
+    data_dir = os.path.join(base_dir, 'multivariate', 'neo_mvpa_n2')
+    contrast_dir = os.path.join(data_dir, 'face_scramble')
 
-    sessid_file = os.path.join(doc_dir, 'sessid_develop_all')
+    sessid_file = os.path.join(doc_dir, 'sessid_06')
     sessid = open(sessid_file).readlines()
     sessid = [line.strip() for line in sessid]
 
-    merged_file = os.path.join(data_dir, 'merged_data_all.nii.gz')
+    merged_file = os.path.join(data_dir, 'merged_face_scramble_mvpa_06.nii.gz')
     str_cmd = ['fslmerge', '-a', merged_file]
     for subj in sessid:
-        temp = os.path.join(data_dir, subj + '_mvpa.nii.gz')
+        temp = os.path.join(contrast_dir, subj + '_mvpa.nii.gz')
         str_cmd.append(temp)
     os.system(' '.join(str_cmd))
 
@@ -782,7 +781,7 @@ def calculate_roi_mvpa_devel():
 
 if __name__ == '__main__':
     #zstat_data_merge()
-    #mvpa_data_merge()
+    mvpa_data_merge()
     #z2r()
     #calculate_roi_mvpa()
     #calculate_group_roi_mvpa()
@@ -792,6 +791,6 @@ if __name__ == '__main__':
     #calculate_roi_mean_mvpa()
     #calculate_group_roi_mean_mvpa()
     #calculate_roi_mvpa_devel()
-    calculate_group_roi_mvpa()
+    #calculate_group_roi_mvpa()
     #calculate_group_roi_mvpa_reliability()
 
