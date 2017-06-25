@@ -56,7 +56,7 @@ def calculate_mvpa_sess():
     data_dir = os.path.join(base_dir, 'multivariate', 'neo_mvpa_n2')
     targ_dir = os.path.join(data_dir, 'face_obj')
 
-    sessid_file = os.path.join(doc_dir, 'sessid_06')
+    sessid_file = os.path.join(doc_dir, 'sessid_dc')
     sessid = open(sessid_file).readlines()
     sessid = [line.strip() for line in sessid]
 
@@ -328,13 +328,13 @@ def mvpa_data_merge():
     base_dir = r'/nfs/t3/workingshop/huanglijie/uni_mul_analysis'
     doc_dir = os.path.join(base_dir, 'doc')
     data_dir = os.path.join(base_dir, 'multivariate', 'neo_mvpa_n2')
-    contrast_dir = os.path.join(data_dir, 'face_scramble')
+    contrast_dir = os.path.join(data_dir, 'obj_scramble')
 
     sessid_file = os.path.join(doc_dir, 'sessid_06')
     sessid = open(sessid_file).readlines()
     sessid = [line.strip() for line in sessid]
 
-    merged_file = os.path.join(data_dir, 'merged_face_scramble_mvpa_06.nii.gz')
+    merged_file = os.path.join(data_dir, 'merged_obj_scramble_mvpa_06.nii.gz')
     str_cmd = ['fslmerge', '-a', merged_file]
     for subj in sessid:
         temp = os.path.join(contrast_dir, subj + '_mvpa.nii.gz')
@@ -579,7 +579,7 @@ def calculate_group_roi_mvpa():
 
     roi_list = [1, 2, 3, 4, 7, 8]
 
-    sessid_file = os.path.join(doc_dir, 'sessid_06')
+    sessid_file = os.path.join(doc_dir, 'sessid_dc')
     sessid = open(sessid_file).readlines()
     sessid = [line.strip() for line in sessid]
 
@@ -622,9 +622,9 @@ def calculate_group_roi_mvpa():
             scramble_vtr = niroi.get_voxel_value(mask_coord, scramble_cope)
             #mvpa_index = np.corrcoef(face_vtr, object_vtr)[0, 1]
             #mvpa_index = np.corrcoef(face_vtr, scramble_vtr)[0, 1]
-            #mvpa_index = np.corrcoef(object_vtr, scramble_vtr)[0, 1]
+            mvpa_index = np.corrcoef(object_vtr, scramble_vtr)[0, 1]
             #mvpa_index = np.corrcoef(face_vtr, scene_vtr)[0, 1]
-            mvpa_index = np.corrcoef(scene_vtr, scramble_vtr)[0, 1]
+            #mvpa_index = np.corrcoef(scene_vtr, scramble_vtr)[0, 1]
             if np.isnan(mvpa_index):
                 v = 'nan'
             else:
@@ -781,11 +781,11 @@ def calculate_roi_mvpa_devel():
 
 if __name__ == '__main__':
     #zstat_data_merge()
-    mvpa_data_merge()
+    #mvpa_data_merge()
     #z2r()
     #calculate_roi_mvpa()
     #calculate_group_roi_mvpa()
-    #calculate_mvpa_sess()
+    calculate_mvpa_sess()
     #calculate_mvpa_reliability_sess()
     #calculate_roi_mean_mvpa_devel()
     #calculate_roi_mean_mvpa()
