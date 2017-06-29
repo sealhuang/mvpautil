@@ -40,8 +40,8 @@ def calculate_mvpa(subj, db_dir, mask_coord, out_dir, neighbor_size):
         object_vtr = niroi.get_voxel_value(cube_coord, object_cope)
         scramble_vtr = niroi.get_voxel_value(cube_coord, scramble_cope)
         #r_data[tuple(c)] = np.corrcoef(face_vtr, object_vtr)[0, 1]
-        r_data[tuple(c)] = np.corrcoef(face_vtr, scramble_vtr)[0, 1]
-        #r_data[tuple(c)] = np.corrcoef(scramble_vtr, object_vtr)[0, 1]
+        #r_data[tuple(c)] = np.corrcoef(face_vtr, scramble_vtr)[0, 1]
+        r_data[tuple(c)] = np.corrcoef(scramble_vtr, object_vtr)[0, 1]
     r_data[np.isnan(r_data)] = 0
     out_file = os.path.join(out_dir, subj + '_mvpa.nii.gz')
     util.save2nifti(r_data, out_file)
@@ -54,9 +54,9 @@ def calculate_mvpa_sess():
     base_dir = r'/nfs/t3/workingshop/huanglijie/uni_mul_analysis'
     doc_dir = os.path.join(base_dir, 'doc')
     data_dir = os.path.join(base_dir, 'multivariate', 'neo_mvpa_n2')
-    targ_dir = os.path.join(data_dir, 'face_scramble')
+    targ_dir = os.path.join(data_dir, 'obj_scramble')
 
-    sessid_file = os.path.join(doc_dir, 'sessid_dc')
+    sessid_file = os.path.join(doc_dir, 'sessid_dp_ctrl')
     sessid = open(sessid_file).readlines()
     sessid = [line.strip() for line in sessid]
 
@@ -67,7 +67,7 @@ def calculate_mvpa_sess():
     cope_db_dir = r'/nfs/t3/workingshop/huanglijie/fmri/face/volume'
     #cope_db_dir = r'/nfs/h2/face_development/fmri'
 
-    pool = Pool(processes=20)
+    pool = Pool(processes=15)
     pool.map(functools.partial(calculate_mvpa, db_dir=cope_db_dir,
                                mask_coord=mask_coord, out_dir=targ_dir,
                                neighbor_size=2), sessid)
@@ -328,13 +328,13 @@ def mvpa_data_merge():
     base_dir = r'/nfs/t3/workingshop/huanglijie/uni_mul_analysis'
     doc_dir = os.path.join(base_dir, 'doc')
     data_dir = os.path.join(base_dir, 'multivariate', 'neo_mvpa_n2')
-    contrast_dir = os.path.join(data_dir, 'face_obj')
+    contrast_dir = os.path.join(data_dir, 'obj_scramble')
 
-    sessid_file = os.path.join(doc_dir, 'sessid_dp_ctrl')
+    sessid_file = os.path.join(doc_dir, 'sessid_select_dc')
     sessid = open(sessid_file).readlines()
     sessid = [line.strip() for line in sessid]
 
-    merged_file = os.path.join(data_dir, 'merged_face_obj_mvpa_dp_ctrl.nii.gz')
+    merged_file = os.path.join(data_dir, 'merged_obj_scramble_mvpa_sel_dc.nii.gz')
     str_cmd = ['fslmerge', '-a', merged_file]
     for subj in sessid:
         temp = os.path.join(contrast_dir, subj + '_mvpa.nii.gz')
@@ -579,19 +579,19 @@ def calculate_group_roi_mvpa():
     zstat_data = nib.load(zstat_file).get_data()
     mask_data = nib.load(mask_file).get_data()
     # zstat threshold
-    thres = 2.3
+    thres = 3.08
     zstat_bin = zstat_data >= thres
     mask_data = mask_data * zstat_bin
 
     roi_list = [1, 2, 3, 4]
 
-    sessid_file = os.path.join(doc_dir, 'sessid_06')
+    sessid_file = os.path.join(doc_dir, 'sessid_select_dc')
     sessid = open(sessid_file).readlines()
     sessid = [line.strip() for line in sessid]
 
     cope_db_dir = r'/nfs/t3/workingshop/huanglijie/fmri/face/volume'
 
-    output_file = r'neo_group_roi_mvpa.csv'
+    output_file = r'group_roi_mvpa.csv'
     f = open(output_file, 'wb')
     f.write('SID,rOFA,lOFA,rFFA,lFFA\n')
 
@@ -626,9 +626,78 @@ def calculate_group_roi_mvpa():
             object_vtr = niroi.get_voxel_value(mask_coord, object_cope)
             scene_vtr = niroi.get_voxel_value(mask_coord, scene_cope)
             scramble_vtr = niroi.get_voxel_value(mask_coord, scramble_cope)
-            mvpa_index = np.corrcoef(face_vtr, object_vtr)[0, 1]
+            #mvpa_index = np.corrcoef(face_vtr, object_vtr)[0, 1]
             #mvpa_index = np.corrcoef(face_vtr, scramble_vtr)[0, 1]
-            #mvpa_index = np.corrcoef(object_vtr, scramble_vtr)[0, 1]
+            mvpa_index = np.corrcoef(object_vtr, scramble_vtr)[0, 1]
+            #mvpa_index = np.corrcoef(face_vtr, scene_vtr)[0, 1]
+            #mvpa_index = np.corrcoef(scene_vtr, scramble_vtr)[0, 1]
+            if np.isnan(mvpa_index):
+                v = 'nan'
+            else:
+                v = mvpa_index
+            temp.append(str(v))
+        f.write(','.join(temp)+'\n')
+        print 'cost %s s'%(time.time() - start_time)
+
+def calculate_group_roi_mvpa_tmp():
+    """
+    Calculate MVPA index for a ROI.
+
+    """
+    base_dir = r'/nfs/t3/workingshop/huanglijie/uni_mul_analysis'
+    #roi_dir = os.path.join(base_dir, 'for_plot')
+    roi_dir = os.path.join(base_dir, 'multivariate', 'neo_analysis', 'mask')
+    doc_dir = os.path.join(base_dir, 'doc')
+
+    mask_file = os.path.join(roi_dir, 'rFFA_dc_258.nii.gz')
+    mask_data = nib.load(mask_file).get_data()
+
+    roi_list = [3]
+
+    sessid_file = os.path.join(doc_dir, 'sessid_dc')
+    sessid = open(sessid_file).readlines()
+    sessid = [line.strip() for line in sessid]
+
+    cope_db_dir = r'/nfs/t3/workingshop/huanglijie/fmri/face/volume'
+
+    output_file = r'group_roi_mvpa.csv'
+    f = open(output_file, 'wb')
+    f.write('SID,rFFA\n')
+
+    for subj in sessid:
+        print subj
+        temp = [subj]
+        start_time = time.time()
+
+        raw_file = util.get_raw_file(cope_db_dir, subj, 'dynamic')
+        face_cope = nib.load(raw_file['face']).get_data()
+        object_cope = nib.load(raw_file['object']).get_data()
+        scene_cope = nib.load(raw_file['scene']).get_data()
+        scramble_cope = nib.load(raw_file['scramble']).get_data()
+        # get mean cope across conditions
+        mean_cope = (face_cope+object_cope+scene_cope+scramble_cope) / 4
+        # remove mean cope
+        face_cope = face_cope - mean_cope
+        object_cope = object_cope - mean_cope
+        scene_cope = scene_cope - mean_cope
+        scramble_cope = scramble_cope - mean_cope
+
+        # calculate mvpa index for each roi
+        for roi in roi_list:
+            roi_mask = mask_data.copy()
+            roi_mask[roi_mask!=roi] = 0
+            roi_mask[roi_mask==roi] = 1
+            if not roi_mask.sum():
+                temp.append('Null')
+                continue
+            mask_coord = niroi.get_roi_coord(roi_mask)
+            face_vtr = niroi.get_voxel_value(mask_coord, face_cope)
+            object_vtr = niroi.get_voxel_value(mask_coord, object_cope)
+            scene_vtr = niroi.get_voxel_value(mask_coord, scene_cope)
+            scramble_vtr = niroi.get_voxel_value(mask_coord, scramble_cope)
+            #mvpa_index = np.corrcoef(face_vtr, object_vtr)[0, 1]
+            #mvpa_index = np.corrcoef(face_vtr, scramble_vtr)[0, 1]
+            mvpa_index = np.corrcoef(object_vtr, scramble_vtr)[0, 1]
             #mvpa_index = np.corrcoef(face_vtr, scene_vtr)[0, 1]
             #mvpa_index = np.corrcoef(scene_vtr, scramble_vtr)[0, 1]
             if np.isnan(mvpa_index):
@@ -790,13 +859,14 @@ if __name__ == '__main__':
     #mvpa_data_merge()
     #z2r()
     #calculate_roi_mvpa()
-    calculate_group_roi_mvpa()
+    #calculate_group_roi_mvpa()
     #calculate_mvpa_sess()
     #calculate_mvpa_reliability_sess()
     #calculate_roi_mean_mvpa_devel()
     #calculate_roi_mean_mvpa()
     #calculate_group_roi_mean_mvpa()
     #calculate_roi_mvpa_devel()
+    calculate_group_roi_mvpa_tmp()
     #calculate_group_roi_mvpa()
     #calculate_group_roi_mvpa_reliability()
 
