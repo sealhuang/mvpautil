@@ -649,10 +649,11 @@ def calculate_group_roi_mvpa_tmp():
     roi_dir = os.path.join(base_dir, 'multivariate', 'neo_analysis', 'mask')
     doc_dir = os.path.join(base_dir, 'doc')
 
-    mask_file = os.path.join(roi_dir, 'rFFA_dc_258.nii.gz')
+    mask_file = os.path.join(roi_dir, 'ventral_roi_258_dc.nii.gz')
+    #mask_file = os.path.join(roi_dir, 'rFFA_dc_258.nii.gz')
     mask_data = nib.load(mask_file).get_data()
 
-    roi_list = [3]
+    roi_list = [1, 2, 3, 4]
 
     sessid_file = os.path.join(doc_dir, 'sessid_dc')
     sessid = open(sessid_file).readlines()
@@ -662,7 +663,7 @@ def calculate_group_roi_mvpa_tmp():
 
     output_file = r'group_roi_mvpa.csv'
     f = open(output_file, 'wb')
-    f.write('SID,rFFA\n')
+    f.write('SID,rOFA,lOFA,rFFA,lFFA\n')
 
     for subj in sessid:
         print subj
