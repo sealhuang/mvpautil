@@ -7,6 +7,7 @@ import nibabel as nib
 from scipy import io as sio
 
 from pynit.base import unpack as pyunpack
+from nitools import roi as niroi
 from nitools.roi import extract_mean_ts
 
 
@@ -88,7 +89,7 @@ def get_roi_ts(root_dir, seq):
                     # get time course for each roi
                     roi_ts = np.zeros((emo_data.shape[3], roi_num))
                     for k in range(roi_num):
-                        roi_ts[:, k] = extract_mean_ts(emo_data, rois==(k+1))
+                        roi_ts[:, k] = niroi.extract_mean_ts(emo_data, rois==(k+1))
                     outfile = '%s_roi_ts_run%s_emo%s.npy'%(sid[:2], i+1, j+1)
                     outfile = os.path.join(ppi_dir, 'decovPPI', outfile)
                     np.save(outfile, roi_ts)
