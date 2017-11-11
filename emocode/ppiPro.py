@@ -156,8 +156,6 @@ def get_mvp_group_roi(root_dir):
                 trn_cope = nib.load(trn_file).get_data()
                 test_cope = nib.load(test_file).get_data()
                 run_cope = np.concatenate((trn_cope, test_cope), axis=3)
-                print 'cope data size: ',
-                print run_cope.shape
                 # XXX: remove mean cope from each trial
                 #mean_cope = np.mean(run_cope, axis=3, keepdims=True)
                 #run_cope = run_cope - mean_cope
@@ -173,7 +171,7 @@ def get_mvp_group_roi(root_dir):
         for roi in mvp_dict:
             mvp_dict[roi] = np.array(mvp_dict[roi])
         outfile = r'%s_roi_mvp.mat'%(sid)
-        np.save(outfile, mvp_dict)
+        sio.savemat(outfile, mvp_dict)
 
 
 if __name__=='__main__':
