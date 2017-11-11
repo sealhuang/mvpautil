@@ -119,6 +119,59 @@ def get_conn(root_dir):
     #outfile = os.path.join(ppi_dir, 'conn_mtx.mat')
     #sio.savemat(outfile, conn_dict)
 
+def get_mvp_group_roi(root_dir):
+    """Get multivoxel activity pattern for each srimulus from each ROI."""
+    # directory config
+    nii_dir = os.path.join(root_dir, 'nii')
+    ppi_dir = os.path.join(root_dir, 'ppi')
+    # load rois
+    mask_data = nib.load(os.path.join(ppi_dir, 'cube_rois.nii.gz')).get_data()
+    roi_dict = {'rOFA': 1, 'lOFA': 2, 'rFFA': 3, 'lFFA': 4}
+    # get scan info from scanlist
+    scanlist_file = os.path.join(root_dir, 'doc', 'scanlist.csv')
+    [scan_info, subj_list] = pyunpack.readscanlist(scanlist_file)
+
+    for subj in subj_list:
+        # get run infor for emo task
+        sid = subj.sess_ID
+        subj_dir = os.path.join(nii_dir, sid, 'emo')
+        # get run index
+        if not 'emo' in subj.run_info:
+            continue
+        [run_idx, par_idx] = subj.getruninfo('emo')
+        # var for MVP
+        mvp_dict = {}
+        for roi in roi_dict:
+            mvp_dict[roi] = []
+        for i in range(10):
+            if str(i+1) in par_idx:
+                print 'Run %s'%(i+1)
+                # load cope data
+                ipar = par_idx.index(str(i+1))
+                run_dir = os.path.join(subj_dir, '00'+run_idx[ipar])
+                print run_dir
+                trn_file = os.path.join(run_dir, 'train_merged_cope.nii.gz')
+                test_file = os.path.join(run_dir, 'test_merged_cope.nii.gz')
+                trn_cope = nib.load(trn_file).get_data()
+                test_cope = nib.load(test_file).get_data()
+                run_cope = np.concatenate((trn_cope, test_cope), axis=3)
+                # XXX: remove mean cope from each trial
+                #mean_cope = np.mean(run_cope, axis=3, keepdims=True)
+                #run_cope = run_cope - mean_cope
+                # get MVP for each ROI
+                for roi in roi_dict:
+                    roi_mask = mask_data.copy()
+                    roi_mask[roi_mask!=roi_dict[roi]] = 0
+                    roi_mask[roi_mask==roi_dict[roi]] = 1
+                    roi_coord = niroi.get_roi_coord(roi_mask)
+                    for j in range(run_cope.shape[3]):
+                        vtr = niroi.get_voxel_value(roi_coord, run_cope[..., j])
+                        mvp_dict[roi].append(vtr.tolist())
+        for roi in mvp_dict:
+            mvp_dict[roi] = np.array(mvp_dict[roi])
+        outfile = r'%s_roi_mvp.mat'%(sid)
+        np.save(outfile, mvp_dict)
+
 
 if __name__=='__main__':
     root_dir = r'/nfs/diskstation/projects/emotionPro'
@@ -130,5 +183,6 @@ if __name__=='__main__':
     #seq = get_emo_sequence(root_dir, 'liqing')
     #print seq
     #get_roi_ts(root_dir, seq)    
-    get_conn(root_dir)
+    #get_conn(root_dir)
+    get_mvp_group_roi(root_dir)
 
