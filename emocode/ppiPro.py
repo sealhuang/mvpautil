@@ -173,6 +173,42 @@ def get_mvp_group_roi(root_dir):
         outfile = r'%s_roi_mvp.mat'%(sid)
         sio.savemat(outfile, mvp_dict)
 
+def get_trial_tag(root_dir, subj):
+    """Get emotion tag for each trial"""
+    beh_dir = os.path.join(root_dir, 'beh')
+    par_dir = os.path.join(root_dir, 'par', 'emo')
+    # get run number for subject
+    tag_list = os.listdir(beh_dir)
+    tag_list = [line for line in tag_list if line[-3:]=='csv']
+    run_num = len([line for line in tag_list if line.split('_')[2]==subj])
+    # sequence var
+    tag_list = []
+    for r in range(run_num):
+        # dict for run `r+1`
+        train_trial_file = os.path.join(par_dir, 'trial_seq_%s_train.txt'%(r+1))
+        test_trial_file = os.path.join(par_dir, 'trial_seq_%s_test.txt'%(r+1))
+        train_trials = open(train_trial_file, 'r').readlines()
+        test_trials = open(test_trial_file, 'r').readlines()
+        train_trials = [line.strip().split(',') for line in train_trials]
+        test_trials = [line.strip().split(',') for line in test_trials]
+        trial_info_f = os.path.join(beh_dir,'trial_tag_%s_run%s.csv'%(subj,r+1))
+        trial_info = open(trial_info_f, 'r').readlines()
+        trial_info.pop(0)
+        trial_info = [line.strip().split(',') for line in trial_info]
+        for train_idx in range(len(train_trials)):
+            img = train_trials[train_idx][1].split('\\')[1]
+            emo = int([line[1] for line in trial_info if line[0]==img][0])
+            tag_list.append(emo)
+        for test_idx in range(len(test_trials)):
+            img = test_trials[test_idx][1].split('\\')[1]
+            emo = int([line[1] for line in trial_info if line[0]==img][0])
+            tag_list.append(emo)
+    outfile = 'trial_tag.txt'
+    f = open(outfile, 'w+')
+    for item in tag_list:
+        f.write(str(item)+'\n')
+    f.close()
+
 
 if __name__=='__main__':
     root_dir = r'/nfs/diskstation/projects/emotionPro'
@@ -185,5 +221,6 @@ if __name__=='__main__':
     #print seq
     #get_roi_ts(root_dir, seq)    
     #get_conn(root_dir)
-    get_mvp_group_roi(root_dir)
+    #get_mvp_group_roi(root_dir)
+    get_trial_tag(root_dir, 'liqing')
 
