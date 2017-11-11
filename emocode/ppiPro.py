@@ -126,7 +126,7 @@ def get_mvp_group_roi(root_dir):
     ppi_dir = os.path.join(root_dir, 'ppi')
     # load rois
     mask_data = nib.load(os.path.join(ppi_dir, 'cube_rois.nii.gz')).get_data()
-    roi_dict = {'rOFA': 1, 'lOFA': 2, 'rFFA': 3, 'lFFA': 4}
+    roi_num = int(mask_data.max())
     # get scan info from scanlist
     scanlist_file = os.path.join(root_dir, 'doc', 'scanlist.csv')
     [scan_info, subj_list] = pyunpack.readscanlist(scanlist_file)
@@ -141,8 +141,8 @@ def get_mvp_group_roi(root_dir):
         [run_idx, par_idx] = subj.getruninfo('emo')
         # var for MVP
         mvp_dict = {}
-        for roi in roi_dict:
-            mvp_dict[roi] = []
+        for r in range(roi_num):
+            mvp_dict['roi_%s'%(r+1)] = []
         for i in range(10):
             if str(i+1) in par_idx:
                 print 'Run %s'%(i+1)
@@ -155,18 +155,20 @@ def get_mvp_group_roi(root_dir):
                 trn_cope = nib.load(trn_file).get_data()
                 test_cope = nib.load(test_file).get_data()
                 run_cope = np.concatenate((trn_cope, test_cope), axis=3)
+                print 'cope data size: ',
+                print run_cope.shape
                 # XXX: remove mean cope from each trial
                 #mean_cope = np.mean(run_cope, axis=3, keepdims=True)
                 #run_cope = run_cope - mean_cope
                 # get MVP for each ROI
-                for roi in roi_dict:
+                for r in range(roi_num):
                     roi_mask = mask_data.copy()
-                    roi_mask[roi_mask!=roi_dict[roi]] = 0
-                    roi_mask[roi_mask==roi_dict[roi]] = 1
+                    roi_mask[roi_mask!=(r+1)] = 0
+                    roi_mask[roi_mask==(r+1)] = 1
                     roi_coord = niroi.get_roi_coord(roi_mask)
                     for j in range(run_cope.shape[3]):
                         vtr = niroi.get_voxel_value(roi_coord, run_cope[..., j])
-                        mvp_dict[roi].append(vtr.tolist())
+                        mvp_dict['roi_%s'%(r+1)].append(vtr.tolist())
         for roi in mvp_dict:
             mvp_dict[roi] = np.array(mvp_dict[roi])
         outfile = r'%s_roi_mvp.mat'%(sid)
