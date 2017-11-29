@@ -55,7 +55,9 @@ def get_roi_ts(root_dir, seq):
     nii_dir = os.path.join(root_dir, 'nii')
     ppi_dir = os.path.join(root_dir, 'ppi')
     # load roi
-    rois = nib.load(os.path.join(ppi_dir, 'cube_rois.nii.gz')).get_data()
+    rois = nib.load(os.path.join(root_dir, 'group-level', 'rois', 'neurosynth',
+                                 'cube_rois_r2.nii.gz')).get_data()
+    #rois = nib.load(os.path.join(ppi_dir, 'cube_rois.nii.gz')).get_data()
     roi_num = int(rois.max())
     # get run info from scanlist
     scanlist_file = os.path.join(root_dir, 'doc', 'scanlist.csv')
@@ -99,12 +101,43 @@ def get_conn(root_dir):
     ppi_dir = os.path.join(root_dir, 'ppi', 'decovPPI')
     conn_dict = {}
     for i in range(7):
-        conn_dict['s%s'%(i+1)] = np.zeros((35, 35, 4))
+        #roi_idx = range(0, 10) + range(11, 49) + range(50, 75) + range(76, 86) + [89, 90] + range(92, 111) + range(112, 166) + range(167, 176) + range(177, 191)
+        roi_idx = range(37)
+        print 'ROI number: %s'%(len(roi_idx))
+        conn_dict['s%s'%(i+1)] = np.zeros((len(roi_idx), len(roi_idx), 4))
+        #conn_dict['s%s'%(i+1)] = np.zeros((41, 41, 4))
         for j in range(4):
             ts = None
             for k in range(10):
                 ts_name = r'S%s_roi_ts_run%s_emo%s.npy'%(i+1, k+1, j+1)
-                ts_file = os.path.join(ppi_dir, ts_name)
+                ts_file = os.path.join(ppi_dir, 'roi_ts','rois_meta_r2',ts_name)
+                if not os.path.exists(ts_file):
+                    print '%s not exists'%(ts_name)
+                    continue
+                tmp = np.load(ts_file)
+                if isinstance(ts, np.ndarray):
+                    tmp = tmp[:, roi_idx]
+                    ts = np.concatenate((ts, tmp), axis=0)
+                else:
+                    ts = tmp[:, roi_idx]
+            print ts.shape
+            conn_dict['s%s'%(i+1)][..., j] = np.corrcoef(ts.T)
+        outname = r's%s_conn.npy'%(i+1)
+        np.save(os.path.join(ppi_dir, outname), conn_dict['s%s'%(i+1)])
+    outfile = os.path.join(ppi_dir, 'conn_mtx.mat')
+    sio.savemat(outfile, conn_dict)
+
+def get_rand_conn(root_dir, rand_num):
+    """Get connectivity matrix."""
+    ppi_dir = os.path.join(root_dir, 'ppi', 'decovPPI')
+    conn_dict = {}
+    for i in range(7):
+        conn_dict['s%s'%(i+1)] = np.zeros((37, 37, 4, rand_num))
+        ts = None
+        for j in range(10):
+            for k in range(4):
+                ts_name = r'S%s_roi_ts_run%s_emo%s.npy'%(i+1, j+1, k+1)
+                ts_file = os.path.join(ppi_dir, 'roi_ts','rois_meta', ts_name)
                 if not os.path.exists(ts_file):
                     print '%s not exists'%(ts_name)
                     continue
@@ -113,12 +146,17 @@ def get_conn(root_dir):
                     ts = np.concatenate((ts, tmp), axis=0)
                 else:
                     ts = tmp
-            print ts.shape
-            conn_dict['s%s'%(i+1)][..., j] = np.corrcoef(ts.T)
-        outname = r's%s_conn.npy'%(i+1)
+        print ts.shape
+        for r in range(rand_num):
+            permutated_idx  = np.random.permutation(ts.shape[0])
+            parts = ts.shape[0] / 4
+            for c in range(4):
+                tmp = ts[permutated_idx[(c*parts):(c*parts+parts)], :]
+                conn_dict['s%s'%(i+1)][..., c, r] = np.corrcoef(tmp.T)
+        outname = r's%s_rand_conn.npy'%(i+1)
         np.save(os.path.join(ppi_dir, outname), conn_dict['s%s'%(i+1)])
-    #outfile = os.path.join(ppi_dir, 'conn_mtx.mat')
-    #sio.savemat(outfile, conn_dict)
+    outfile = os.path.join(ppi_dir, 'rand_conn_mtx.mat')
+    sio.savemat(outfile, conn_dict)
 
 def get_mvp_group_roi(root_dir):
     """Get multivoxel activity pattern for each srimulus from each ROI."""
@@ -126,7 +164,9 @@ def get_mvp_group_roi(root_dir):
     nii_dir = os.path.join(root_dir, 'nii')
     ppi_dir = os.path.join(root_dir, 'ppi')
     # load rois
-    mask_data = nib.load(os.path.join(ppi_dir, 'cube_rois.nii.gz')).get_data()
+    #mask_data = nib.load(os.path.join(ppi_dir, 'cube_rois.nii.gz')).get_data()
+    mask_data = nib.load(os.path.join(root_dir, 'group-level', 'rois',
+                                'neurosynth', 'cube_rois.nii.gz')).get_data()
     roi_num = int(mask_data.max())
     # get scan info from scanlist
     scanlist_file = os.path.join(root_dir, 'doc', 'scanlist.csv')
@@ -157,8 +197,8 @@ def get_mvp_group_roi(root_dir):
                 test_cope = nib.load(test_file).get_data()
                 run_cope = np.concatenate((trn_cope, test_cope), axis=3)
                 # XXX: remove mean cope from each trial
-                #mean_cope = np.mean(run_cope, axis=3, keepdims=True)
-                #run_cope = run_cope - mean_cope
+                mean_cope = np.mean(run_cope, axis=3, keepdims=True)
+                run_cope = run_cope - mean_cope
                 # get MVP for each ROI
                 for r in range(roi_num):
                     roi_mask = mask_data.copy()
@@ -198,15 +238,15 @@ def get_trial_tag(root_dir, subj):
         for train_idx in range(len(train_trials)):
             img = train_trials[train_idx][1].split('\\')[1]
             emo = int([line[1] for line in trial_info if line[0]==img][0])
-            tag_list.append(emo)
+            tag_list.append([img, emo])
         for test_idx in range(len(test_trials)):
             img = test_trials[test_idx][1].split('\\')[1]
             emo = int([line[1] for line in trial_info if line[0]==img][0])
-            tag_list.append(emo)
-    outfile = 'trial_tag.txt'
+            tag_list.append([img, emo])
+    outfile = 'trial_tag.csv'
     f = open(outfile, 'w+')
     for item in tag_list:
-        f.write(str(item)+'\n')
+        f.write(','.join([str(ele) for ele in item])+'\n')
     f.close()
 
 
@@ -220,7 +260,8 @@ if __name__=='__main__':
     #seq = get_emo_sequence(root_dir, 'liqing')
     #print seq
     #get_roi_ts(root_dir, seq)    
-    #get_conn(root_dir)
+    get_conn(root_dir)
+    #get_rand_conn(root_dir, 1000)
     #get_mvp_group_roi(root_dir)
-    get_trial_tag(root_dir, 'liqing')
+    #get_trial_tag(root_dir, 'liqing')
 
