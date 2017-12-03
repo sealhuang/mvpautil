@@ -10,7 +10,29 @@ def load_data(db_dir, subj_id, one_hot=True):
     """Load brain activity evoked by each stimulus and the corresponding
     emotion label from `subj_id`.
     """
-    pass
+    x = None
+    y = None
+    for i in range(10):
+        for j in range(4):
+            ts_file = os.path.join(db_dir,
+                    '%s_roi_ts_run%s_emo%s.npy'%(subj_id, i+1, j+1))
+            if os.path.exists(ts_file):
+                ts = np.load(ts_file)
+                if one_hot:
+                    label = np.zeros((ts.shape[0], 4))
+                    label[:, j] = 1
+                else:
+                    label = ones(ts.shape[0])*(j+1)
+                if not isinstance(x, np.ndarray):
+                    x = ts
+                    y = label
+                else:
+                    x = np.concatenate((x, ts), axis=0)
+                    y = np.concatenage((y, label), axis=0)
+            else:
+                print 'File %s does not exist'%(ts_file)
+
+        return x, y
 
 def cls(train_x, train_y, test_x, test_y):
     """Emotion classifier based on softmax"""
@@ -44,6 +66,16 @@ def cls(train_x, train_y, test_x, test_y):
         print accuracy.eval(feed_dict={x: test_x, y_: test_y})
 
 if __name__=='__main__':
-    pass
+    db_dir = r''
+    x, y = load_data(db_dir, 'S1', one_hot=True)
+    idx0 = np.arange(x.shape[0])
+    np.random.shuffle(idx0)
+    x = x[idx0]
+    y = y[idx0]
+    train_x = x[:x.shape[0]*0.9]
+    train_y = y[:x.shape[0]*0.9]
+    test_x = x[x.shape[0]*0.9:]
+    test_y = y[x.shape[0]*0.9]
+    cls(train_x, train_y, test_x, test_y)
 
 
