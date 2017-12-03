@@ -28,7 +28,7 @@ def load_data(db_dir, subj_id, one_hot=True):
                     y = label
                 else:
                     x = np.concatenate((x, ts), axis=0)
-                    y = np.concatenage((y, label), axis=0)
+                    y = np.concatenate((y, label), axis=0)
             else:
                 print 'File %s does not exist'%(ts_file)
 
@@ -50,14 +50,14 @@ def cls(train_x, train_y, test_x, test_y):
     # run model
     with tf.Session() as sess:
         sess.run(tf.initialize_all_variables())
-        for i in range(1000):
+        for i in range(10000):
             # data preparation
             idx0 = np.arange(train_x.shape[0])
             np.random.shuffle(idx0)
             shuffle_train_x = train_x[idx0]
             shuffle_train_y = train_y[idx0]
-            batch_x = shuffle_train_x[:50]
-            batch_y = shuffle_train_y[:50]
+            batch_x = shuffle_train_x[:20]
+            batch_y = shuffle_train_y[:20]
             if i%100==0:
                 train_accuracy = accuracy.eval(feed_dict={x: batch_x,
                                                           y_: batch_y})
@@ -66,16 +66,16 @@ def cls(train_x, train_y, test_x, test_y):
         print accuracy.eval(feed_dict={x: test_x, y_: test_y})
 
 if __name__=='__main__':
-    db_dir = r''
+    db_dir = r'/Users/sealhuang/project/rois_meta_r2'
     x, y = load_data(db_dir, 'S1', one_hot=True)
     idx0 = np.arange(x.shape[0])
     np.random.shuffle(idx0)
     x = x[idx0]
     y = y[idx0]
-    train_x = x[:x.shape[0]*0.9]
-    train_y = y[:x.shape[0]*0.9]
-    test_x = x[x.shape[0]*0.9:]
-    test_y = y[x.shape[0]*0.9]
+    train_x = x[:int(x.shape[0]*0.9)]
+    train_y = y[:int(x.shape[0]*0.9)]
+    test_x = x[int(x.shape[0]*0.9):]
+    test_y = y[int(x.shape[0]*0.9):]
     cls(train_x, train_y, test_x, test_y)
 
 
