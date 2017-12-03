@@ -60,32 +60,52 @@ def cls(train_x, train_y, test_x, test_y):
     # run model
     with tf.Session() as sess:
         sess.run(tf.initialize_all_variables())
+        batch_size = 50
+        index_in_epoch = 0
+        epochs_completed = 0
         for i in range(10000):
-            # data preparation
-            idx0 = np.arange(train_x.shape[0])
-            np.random.shuffle(idx0)
-            shuffle_train_x = train_x[idx0]
-            shuffle_train_y = train_y[idx0]
-            batch_x = shuffle_train_x[:50]
-            batch_y = shuffle_train_y[:50]
+            start = index_in_epoch
+            if epochs_completed==0 and start==0:
+                perm0 = np.arange(train_x.shape[0])
+                np.random.shuffle(perm0)
+                shuffle_train_x = train_x[perm0]
+                shuffle_train_y = train_y[perm0]
+            # go to the next epoch
+            if start + batch_size > train_x.shape[0]:
+                # finish epoch
+                epochs_completed += 1
+                # get the rest examples in this epoch
+                rest_num_examples = int(train_x.shape[0]) - start
+                x_rest_part = shuffle_train_x[start:train_x.shape[0]]
+                y_rest_part = shuffle_train_y[start:train_x.shape[0]]
+                # shuffle the data
+                perm = np.arange(train_x.shape[0])
+                np.random.shuffle(perm)
+                shuffle_train_x = train_x[perm]
+                shuffle_train_y = train_y[perm]
+                # start next epoch
+                start = 0
+                index_in_epoch = batch_size - rest_num_examples
+                end = index_in_epoch
+                x_new_part = shuffle_train_x[start:end]
+                y_new_part = shuffle_train_y[start:end]
+                batch = [np.concatenate((x_rest_part, x_new_part), axis=0),
+                         np.concatenate((y_rest_part, y_new_part), axis=0)]
+            else:
+                index_in_epoch += batch_size
+                end = index_in_epoch
+                batch = [shuffle_train_x[start:end], shuffle_train_y[start:end]]
+            # print training accuracy
             if i%100==0:
-                train_accuracy = accuracy.eval(feed_dict={x: batch_x,
-                                                          y_: batch_y})
+                train_accuracy = accuracy.eval(feed_dict={x: batch[0],
+                                                          y_: batch[1]})
                 print "step %d, training accuracy %g"%(i, train_accuracy)
-            train_step.run(feed_dict={x: batch_x, y_: batch_y})
+            train_step.run(feed_dict={x: batch[0], y_: batch[1]})
         print accuracy.eval(feed_dict={x: test_x, y_: test_y})
 
 if __name__=='__main__':
-    #db_dir = r'/Users/sealhuang/project/rois_meta_r2'
-    #x, y = load_data(db_dir, 'S1', one_hot=True)
-    #idx0 = np.arange(x.shape[0])
-    #np.random.shuffle(idx0)
-    #x = x[idx0]
-    #y = y[idx0]
-    #train_x = x[:int(x.shape[0]*0.9)]
-    #train_y = y[:int(x.shape[0]*0.9)]
-    #test_x = x[int(x.shape[0]*0.9):]
-    #test_y = y[int(x.shape[0]*0.9):]
-    #cls(train_x, train_y, test_x, test_y)
+    db_dir = r'/Users/sealhuang/project/rois_meta_r2'
+    x, y = load_data(db_dir, 'S1', one_hot=True)
+    cls(train_x, train_y, test_x, test_y)
 
 

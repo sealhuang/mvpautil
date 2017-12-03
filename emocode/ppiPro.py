@@ -156,11 +156,9 @@ def get_conn(root_dir):
     ppi_dir = os.path.join(root_dir, 'ppi', 'decovPPI')
     conn_dict = {}
     for i in range(7):
-        #roi_idx = range(0, 10) + range(11, 49) + range(50, 75) + range(76, 86) + [89, 90] + range(92, 111) + range(112, 166) + range(167, 176) + range(177, 191)
         roi_idx = range(37)
         print 'ROI number: %s'%(len(roi_idx))
         conn_dict['s%s'%(i+1)] = np.zeros((len(roi_idx), len(roi_idx), 4))
-        #conn_dict['s%s'%(i+1)] = np.zeros((41, 41, 4))
         for j in range(4):
             ts = None
             for k in range(10):
@@ -170,6 +168,9 @@ def get_conn(root_dir):
                     print '%s not exists'%(ts_name)
                     continue
                 tmp = np.load(ts_file)
+                m = tmp.mean(axis=0, keepdims=True)
+                s = tmp.std(axis=0, keepdims=True)
+                tmp = (tmp - m) / (s + 1e-5)
                 if isinstance(ts, np.ndarray):
                     tmp = tmp[:, roi_idx]
                     ts = np.concatenate((ts, tmp), axis=0)
@@ -197,6 +198,9 @@ def get_rand_conn(root_dir, rand_num):
                     print '%s not exists'%(ts_name)
                     continue
                 tmp = np.load(ts_file)
+                m = tmp.mean(axis=0, keepdims=True)
+                s = tmp.std(axis=0, keepdims=True)
+                tmp = (tmp - m) / (s + 1e-5)
                 if isinstance(ts, np.ndarray):
                     ts = np.concatenate((ts, tmp), axis=0)
                 else:
