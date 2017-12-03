@@ -13,6 +13,8 @@ def load_data(db_dir, subj_id, one_hot=True):
     x = None
     y = None
     for i in range(10):
+        tmp_x = None
+        tmp_y = None
         for j in range(4):
             ts_file = os.path.join(db_dir,
                     '%s_roi_ts_run%s_emo%s.npy'%(subj_id, i+1, j+1))
@@ -23,16 +25,24 @@ def load_data(db_dir, subj_id, one_hot=True):
                     label[:, j] = 1
                 else:
                     label = ones(ts.shape[0])*(j+1)
-                if not isinstance(x, np.ndarray):
-                    x = ts
-                    y = label
+                if not isinstance(tmp_x, np.ndarray):
+                    tmp_x = ts
+                    tmp_y = label
                 else:
-                    x = np.concatenate((x, ts), axis=0)
-                    y = np.concatenate((y, label), axis=0)
+                    tmp_x = np.concatenate((tmp_x, ts), axis=0)
+                    tmp_y = np.concatenate((tmp_y, label), axis=0)
             else:
                 print 'File %s does not exist'%(ts_file)
-
-        return x, y
+        m = tmp_x.mean(axis=0, keepdims=True)
+        s = tmp_x.std(axis=0, keepdims=True)
+        tmp_x = (tmp_x - m) / (s + 1e-5)
+        if not isinstance(x, np.ndarray):
+            x = tmp_x
+            y = tmp_y
+        else:
+            x = np.concatenate((x, tmp_x), axis=0)
+            y = np.concatenate((y, tmp_y), axis=0)
+    return x, y
 
 def cls(train_x, train_y, test_x, test_y):
     """Emotion classifier based on softmax"""
@@ -56,8 +66,8 @@ def cls(train_x, train_y, test_x, test_y):
             np.random.shuffle(idx0)
             shuffle_train_x = train_x[idx0]
             shuffle_train_y = train_y[idx0]
-            batch_x = shuffle_train_x[:20]
-            batch_y = shuffle_train_y[:20]
+            batch_x = shuffle_train_x[:50]
+            batch_y = shuffle_train_y[:50]
             if i%100==0:
                 train_accuracy = accuracy.eval(feed_dict={x: batch_x,
                                                           y_: batch_y})
