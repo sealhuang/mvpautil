@@ -57,53 +57,13 @@ def get_emo_sequence(root_dir, subj):
             seq[r+1]['test'].append([test_idx, emo, subj_emo])
     return seq
 
-#def get_emo_sequence(root_dir, subj):
-#    """Get trial sequence for each emotion condition."""
-#    beh_dir = os.path.join(root_dir, 'beh')
-#    par_dir = os.path.join(root_dir, 'par', 'emo')
-#    # get run number for subject
-#    tag_list = os.listdir(beh_dir)
-#    tag_list = [line for line in tag_list if line[-3:]=='csv']
-#    run_num = len([line for line in tag_list if line.split('_')[2]==subj])
-#    # sequence var
-#    seq = {}
-#    for r in range(run_num):
-#        # dict for run `r+1`
-#        seq[r+1] = {}
-#        train_trial_file = os.path.join(par_dir, 'trial_seq_%s_train.txt'%(r+1))
-#        test_trial_file = os.path.join(par_dir, 'trial_seq_%s_test.txt'%(r+1))
-#        train_trials = open(train_trial_file, 'r').readlines()
-#        test_trials = open(test_trial_file, 'r').readlines()
-#        train_trials = [line.strip().split(',') for line in train_trials]
-#        test_trials = [line.strip().split(',') for line in test_trials]
-#        trial_info_f = os.path.join(beh_dir,'trial_tag_%s_run%s.csv'%(subj,r+1))
-#        trial_info = open(trial_info_f, 'r').readlines()
-#        trial_info.pop(0)
-#        trial_info = [line.strip().split(',') for line in trial_info]
-#        for train_idx in range(len(train_trials)):
-#            img = train_trials[train_idx][1].split('\\')[1]
-#            emo = int([line[1] for line in trial_info if line[0]==img][0])
-#            if not emo in seq[r+1]:
-#                seq[r+1][emo] = {'train': [train_idx]}
-#            else:
-#                seq[r+1][emo]['train'].append(train_idx)
-#        for test_idx in range(len(test_trials)):
-#            img = test_trials[test_idx][1].split('\\')[1]
-#            emo = int([line[1] for line in trial_info if line[0]==img][0])
-#            if not 'test' in seq[r+1][emo]:
-#                seq[r+1][emo]['test'] = [test_idx]
-#            else:
-#                seq[r+1][emo]['test'].append(test_idx)
-#    return seq
-#
-def get_roi_ts(root_dir, seq):
+def get_emo_ts(root_dir, seq):
     """Get neural activity time course of each roi on each emotion condition."""
     nii_dir = os.path.join(root_dir, 'nii')
     ppi_dir = os.path.join(root_dir, 'ppi')
     # load roi
     rois = nib.load(os.path.join(root_dir, 'group-level', 'rois', 'neurosynth',
                                  'cube_rois_r2.nii.gz')).get_data()
-    #rois = nib.load(os.path.join(ppi_dir, 'cube_rois.nii.gz')).get_data()
     roi_num = int(rois.max())
     # get run info from scanlist
     scanlist_file = os.path.join(root_dir, 'doc', 'scanlist.csv')
@@ -129,18 +89,67 @@ def get_roi_ts(root_dir, seq):
                 test_cope = nib.load(test_cope_f).get_data()
                 # get trial sequence for each emotion
                 for j in range(4):
-                    seq_info = seq[i+1][j+1]
+                    train_seq = [line[0] for line in seq[i+1]['train']
+                                    if line[1]==(j+1)]
+                    test_seq = [line[0] for line in seq[i+1]['test']
+                                    if line[1]==(j+1)]
                     emo_data = np.zeros((91, 109, 91,
-                                len(seq_info['train'])+len(seq_info['test'])))
-                    emo_data[..., :len(seq_info['train'])] = train_cope[..., seq_info['train']]
-                    emo_data[..., len(seq_info['train']):] = test_cope[..., seq_info['test']]
+                                        len(train_seq)+len(test_seq)))
+                    emo_data[..., :len(train_seq)] = train_cope[..., train_seq]
+                    emo_data[..., len(train_seq):] = test_cope[..., test_seq]
                     # get time course for each roi
                     roi_ts = np.zeros((emo_data.shape[3], roi_num))
                     for k in range(roi_num):
-                        roi_ts[:, k] = niroi.extract_mean_ts(emo_data, rois==(k+1))
+                        roi_ts[:, k] = niroi.extract_mean_ts(emo_data,
+                                                             rois==(k+1))
                     outfile = '%s_roi_ts_run%s_emo%s.npy'%(sid[:2], i+1, j+1)
                     outfile = os.path.join(ppi_dir, 'decovPPI', outfile)
                     np.save(outfile, roi_ts)
+
+def get_trial_data(root_dir, seq):
+    """Get neural activity time course of each roi on each emotion condition."""
+    nii_dir = os.path.join(root_dir, 'nii')
+    ppi_dir = os.path.join(root_dir, 'ppi')
+    # load roi
+    rois = nib.load(os.path.join(root_dir, 'group-level', 'rois', 'neurosynth',
+                                 'cube_rois_r2.nii.gz')).get_data()
+    roi_num = int(rois.max())
+    # get run info from scanlist
+    scanlist_file = os.path.join(root_dir, 'doc', 'scanlist.csv')
+    [scan_info, subj_list] = pyunpack.readscanlist(scanlist_file)
+    for subj in subj_list:
+        sid = subj.sess_ID
+        print sid
+        subj_dir = os.path.join(nii_dir, sid, 'emo')
+        # get par index for each emo run
+        if not 'emo' in subj.run_info:
+            continue
+        [run_idx, par_idx] = subj.getruninfo('emo')
+        for i in range(10):
+            if str(i+1) in par_idx:
+                print 'Run %s'%(i+1)
+                # load cope data
+                ipar = par_idx.index(str(i+1))
+                run_dir = os.path.join(subj_dir, '00'+run_idx[ipar])
+                print run_dir
+                train_cope_f = os.path.join(run_dir, 'train_merged_cope.nii.gz')
+                test_cope_f = os.path.join(run_dir, 'test_merged_cope.nii.gz')
+                train_cope = nib.load(train_cope_f).get_data()
+                test_cope = nib.load(test_cope_f).get_data()
+                # get time course for each roi
+                train_x = np.zeros((train_cope.shape[3], roi_num))
+                test_x = np.zeros((test_cope.shape[3], roi_num))
+                for k in range(roi_num):
+                    train_x[:, k]=niroi.extract_mean_ts(train_cope, rois==(k+1))
+                    test_x[:, k] = niroi.extract_mean_ts(test_cope, rois==(k+1))
+                train_y = [line[1] for line in seq[i+1]['train']]
+                test_y = [line[1] for line in seq[i+1]['test']]
+                # save dataset
+                outfile = '%s_run%s_roi_data.npy'%(sid[:2], i+1)
+                outfile = os.path.join(ppi_dir, 'decovPPI', outfile)
+                data = {'train_x': train_x, 'train_y': train_y,
+                        'test_x': test_x, 'test_y': test_y}
+                np.save(outfile, data)
 
 def get_conn(root_dir):
     """Get connectivity matrix."""
@@ -304,8 +313,9 @@ if __name__=='__main__':
     #         'zhuzhiyuan': 'S5'}
 
     seq = get_emo_sequence(root_dir, 'liqing')
-    print seq
-    #get_roi_ts(root_dir, seq)    
+    #print seq
+    get_emo_ts(root_dir, seq)
+    #get_trial_data(root_dir, seq)
     #get_conn(root_dir)
     #get_rand_conn(root_dir, 1000)
     #get_mvp_group_roi(root_dir)
