@@ -17,32 +17,31 @@ def get_emo_sequence(root_dir, subj):
     # sequence var
     seq = {}
     for r in range(run_num):
-        # dict for run `r+1`
-        seq[r+1] = {}
         train_trial_file = os.path.join(par_dir, 'trial_seq_%s_train.txt'%(r+1))
         test_trial_file = os.path.join(par_dir, 'trial_seq_%s_test.txt'%(r+1))
+        if not os.path.exists(train_trial_file):
+            print '%s does not exists'%(train_trial_file)
+            continue
+        # dict for run `r+1`
+        seq[r+1] = {'train': [], 'test': []}
         train_trials = open(train_trial_file, 'r').readlines()
         test_trials = open(test_trial_file, 'r').readlines()
         train_trials = [line.strip().split(',') for line in train_trials]
         test_trials = [line.strip().split(',') for line in test_trials]
-        trial_info_f = os.path.join(beh_dir,'trial_tag_%s_run%s.csv'%(subj,r+1))
-        trial_info = open(trial_info_f, 'r').readlines()
-        trial_info.pop(0)
-        trial_info = [line.strip().split(',') for line in trial_info]
+        trial_tag_f = os.path.join(beh_dir, 'trial_tag_%s_run%s.csv'%(subj,r+1))
+        trial_tag = open(trial_tag_f, 'r').readlines()
+        trial_tag.pop(0)
+        trial_tag = [line.strip().split(',') for line in trial_tag]
         for train_idx in range(len(train_trials)):
             img = train_trials[train_idx][1].split('\\')[1]
-            emo = int([line[1] for line in trial_info if line[0]==img][0])
-            if not emo in seq[r+1]:
-                seq[r+1][emo] = {'train': [train_idx]}
-            else:
-                seq[r+1][emo]['train'].append(train_idx)
+            emo = int([line[1] for line in trial_tag if line[0]==img][0])
+            subj_emo = int([line[2] for line in trial_tag if line[0]==img][0])
+            seq[r+1]['train'].append([train_idx, emo, subj_emo])
         for test_idx in range(len(test_trials)):
             img = test_trials[test_idx][1].split('\\')[1]
-            emo = int([line[1] for line in trial_info if line[0]==img][0])
-            if not 'test' in seq[r+1][emo]:
-                seq[r+1][emo]['test'] = [test_idx]
-            else:
-                seq[r+1][emo]['test'].append(test_idx)
+            emo = int([line[1] for line in trial_tag if line[0]==img][0])
+            subj_emo = int([line[2] for line in trial_tag if line[0]==img][0])
+            seq[r+1]['test'].append([test_idx, emo, subj_emo])
     return seq
 
 def get_roi_ts(root_dir, seq):
@@ -161,16 +160,19 @@ def cls(train_x, train_y, test_x, test_y):
         print accuracy.eval(feed_dict={x: test_x, y_: test_y})
 
 if __name__=='__main__':
-    db_dir = r'/Users/sealhuang/project/rois_meta_r2'
-    x, y = load_data(db_dir, 'S1', one_hot=True)
-    idx0 = np.arange(x.shape[0])
-    np.random.shuffle(idx0)
-    x = x[idx0]
-    y = y[idx0]
-    train_x = x[:int(x.shape[0]*0.9)]
-    train_y = y[:int(x.shape[0]*0.9)]
-    test_x = x[int(x.shape[0]*0.9):]
-    test_y = y[int(x.shape[0]*0.9):]
-    cls(train_x, train_y, test_x, test_y)
+    root_dir = r'/nfs/diskstation/projects/emotionPro'
+    seq = get_emo_sequence(root_dir, 'zhangdan')
+    print seq
+    #db_dir = r'/Users/sealhuang/project/rois_meta_r2'
+    #x, y = load_data(db_dir, 'S1', one_hot=True)
+    #idx0 = np.arange(x.shape[0])
+    #np.random.shuffle(idx0)
+    #x = x[idx0]
+    #y = y[idx0]
+    #train_x = x[:int(x.shape[0]*0.9)]
+    #train_y = y[:int(x.shape[0]*0.9)]
+    #test_x = x[int(x.shape[0]*0.9):]
+    #test_y = y[int(x.shape[0]*0.9):]
+    #cls(train_x, train_y, test_x, test_y)
 
 
