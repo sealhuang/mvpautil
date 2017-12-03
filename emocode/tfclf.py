@@ -29,13 +29,18 @@ def cls(train_x, train_y, test_x, test_y):
     with tf.Session() as sess:
         sess.run(tf.initialize_all_variables())
         for i in range(1000):
-            # XXX
-            batch = mnist.train.next_batch(50)
+            # data preparation
+            idx0 = np.arange(train_x.shape[0])
+            np.random.shuffle(idx0)
+            shuffle_train_x = train_x[idx0]
+            shuffle_train_y = train_y[idx0]
+            batch_x = shuffle_train_x[:50]
+            batch_y = shuffle_train_y[:50]
             if i%100==0:
-                train_accuracy = accuracy.eval(feed_dict={
-                                    x: batch[0], y_: batch[1]})
+                train_accuracy = accuracy.eval(feed_dict={x: batch_x,
+                                                          y_: batch_y})
                 print "step %d, training accuracy %g"%(i, train_accuracy)
-            train_step.run(feed_dict={x: batch[0], y_: batch[1]})
+            train_step.run(feed_dict={x: batch_x, y_: batch_y})
         print accuracy.eval(feed_dict={x: test_x, y_: test_y})
 
 if __name__=='__main__':
