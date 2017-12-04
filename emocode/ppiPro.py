@@ -147,7 +147,8 @@ def get_trial_data(root_dir, seq):
                 # save dataset
                 outfile = '%s_run%s_roi_data'%(sid[:2], i+1)
                 outfile = os.path.join(ppi_dir, 'decovPPI', outfile)
-                np.savez(outfile, train_x, train_y, test_x, test_y)
+                np.savez(outfile, train_x=train_x, train_y=train_y,
+                                  test_x=test_x, test_y=test_y)
 
 def get_conn(root_dir):
     """Get connectivity matrix."""
