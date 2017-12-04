@@ -145,11 +145,9 @@ def get_trial_data(root_dir, seq):
                 train_y = [line[1] for line in seq[i+1]['train']]
                 test_y = [line[1] for line in seq[i+1]['test']]
                 # save dataset
-                outfile = '%s_run%s_roi_data.npy'%(sid[:2], i+1)
+                outfile = '%s_run%s_roi_data'%(sid[:2], i+1)
                 outfile = os.path.join(ppi_dir, 'decovPPI', outfile)
-                data = {'train_x': train_x, 'train_y': train_y,
-                        'test_x': test_x, 'test_y': test_y}
-                np.save(outfile, data)
+                np.savez(outfile, train_x, train_y, test_x, test_y)
 
 def get_conn(root_dir):
     """Get connectivity matrix."""
