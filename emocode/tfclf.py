@@ -10,39 +10,40 @@ def load_data(db_dir, subj_id, one_hot=True):
     """Load brain activity evoked by each stimulus and the corresponding
     emotion label from `subj_id`.
     """
-    x = None
-    y = None
+    train_x = None
+    train_y = None
+    test_x = None
+    test_y = None
     for i in range(10):
-        tmp_x = None
-        tmp_y = None
-        for j in range(4):
-            ts_file = os.path.join(db_dir,
-                    '%s_roi_ts_run%s_emo%s.npy'%(subj_id, i+1, j+1))
-            if os.path.exists(ts_file):
-                ts = np.load(ts_file)
-                if one_hot:
-                    label = np.zeros((ts.shape[0], 4))
-                    label[:, j] = 1
-                else:
-                    label = ones(ts.shape[0])*(j+1)
-                if not isinstance(tmp_x, np.ndarray):
-                    tmp_x = ts
-                    tmp_y = label
-                else:
-                    tmp_x = np.concatenate((tmp_x, ts), axis=0)
-                    tmp_y = np.concatenate((tmp_y, label), axis=0)
+        data_file = os.path.join(db_dir, '%s_run%s_roi_data.npz'%(subj_id, i+1))
+        if os.path.exists(data_file):
+            npz = np.load(data_file)
+            x = np.concatenate((npz['arr_0'], npz['arr_2']), axis=0)
+            m = x.mean(axis=0)
+            s = x.std(axis=0)
+            tmp_trn_x = (npz['arr_0'] - m) / (s + 1e-5)
+            tmp_test_x = (npz['arr_2'] - m) / (s + 1e-5)
+            if one_hot:
+                tmp_trn_y = np.zeros((npz['arr_1'].shape[0], 4))
+                tmp_trn_y[range(npz['arr_1'].shape[0]), npz['arr_1']-1] = 1
+                tmp_test_y = np.zeros((npz['arr_3'].shape[0], 4))
+                tmp_test_y[range(npz['arr_3'].shape[0]), npz['arr_3']-1] = 1
             else:
-                print 'File %s does not exist'%(ts_file)
-        m = tmp_x.mean(axis=0, keepdims=True)
-        s = tmp_x.std(axis=0, keepdims=True)
-        tmp_x = (tmp_x - m) / (s + 1e-5)
-        if not isinstance(x, np.ndarray):
-            x = tmp_x
-            y = tmp_y
+                tmp_trn_y = npz['arr_1']
+                tmp_test_y = npz['arr_3']
+            if not isinstance(train_x, np.ndarray):
+                train_x = tmp_trn_x
+                train_y = tmp_trn_y
+                test_x = tmp_test_x
+                test_y = tmp_test_y
+            else:
+                train_x = np.concatenate((train_x, tmp_trn_x), axis=0)
+                train_y = np.concatenate((train_y, tmp_trn_y), axis=0)
+                test_x = np.concatenate((test_x, tmp_test_x), axis=0)
+                test_y = np.concatenate((test_y, tmp_test_y), axis=0)
         else:
-            x = np.concatenate((x, tmp_x), axis=0)
-            y = np.concatenate((y, tmp_y), axis=0)
-    return x, y
+            print 'File %s does not exist'%(data_file)
+    return train_x, train_y, test_x, test_y
 
 def cls(train_x, train_y, test_x, test_y):
     """Emotion classifier based on softmax"""
@@ -54,16 +55,16 @@ def cls(train_x, train_y, test_x, test_y):
     b = tf.Variable(tf.zeros([4]))
     y = tf.nn.softmax(tf.matmul(x, W) + b)
     cross_entropy = -tf.reduce_sum(y_*tf.log(y))
-    train_step = tf.train.GradientDescentOptimizer(0.01).minimize(cross_entropy)
+    train_step = tf.train.GradientDescentOptimizer(0.001).minimize(cross_entropy)
     correct_prediction = tf.equal(tf.argmax(y, 1), tf.argmax(y_, 1))
     accuracy = tf.reduce_mean(tf.cast(correct_prediction, "float"))
     # run model
     with tf.Session() as sess:
         sess.run(tf.initialize_all_variables())
-        batch_size = 50
+        batch_size = 30
         index_in_epoch = 0
         epochs_completed = 0
-        for i in range(10000):
+        for i in range(5000):
             start = index_in_epoch
             if epochs_completed==0 and start==0:
                 perm0 = np.arange(train_x.shape[0])
@@ -105,7 +106,6 @@ def cls(train_x, train_y, test_x, test_y):
 
 if __name__=='__main__':
     db_dir = r'/Users/sealhuang/project/rois_meta_r2'
-    x, y = load_data(db_dir, 'S1', one_hot=True)
+    train_x, train_y, test_x, test_y = load_data(db_dir, 'S7', one_hot=True)
     cls(train_x, train_y, test_x, test_y)
-
 
