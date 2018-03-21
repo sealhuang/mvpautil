@@ -18,19 +18,19 @@ def load_data(db_dir, subj_id, one_hot=True):
         data_file = os.path.join(db_dir, '%s_run%s_roi_data.npz'%(subj_id, i+1))
         if os.path.exists(data_file):
             npz = np.load(data_file)
-            x = np.concatenate((npz['arr_0'], npz['arr_2']), axis=0)
+            x = np.concatenate((npz['train_x'], npz['test_x']), axis=0)
             m = x.mean(axis=0)
             s = x.std(axis=0)
-            tmp_trn_x = (npz['arr_0'] - m) / (s + 1e-5)
-            tmp_test_x = (npz['arr_2'] - m) / (s + 1e-5)
+            tmp_trn_x = (npz['train_x'] - m) / (s + 1e-5)
+            tmp_test_x = (npz['test_x'] - m) / (s + 1e-5)
             if one_hot:
-                tmp_trn_y = np.zeros((npz['arr_1'].shape[0], 4))
-                tmp_trn_y[range(npz['arr_1'].shape[0]), npz['arr_1']-1] = 1
-                tmp_test_y = np.zeros((npz['arr_3'].shape[0], 4))
-                tmp_test_y[range(npz['arr_3'].shape[0]), npz['arr_3']-1] = 1
+                tmp_trn_y = np.zeros((npz['train_y'].shape[0], 4))
+                tmp_trn_y[range(npz['train_y'].shape[0]), npz['train_y']-1] = 1
+                tmp_test_y = np.zeros((npz['test_y'].shape[0], 4))
+                tmp_test_y[range(npz['test_y'].shape[0]), npz['test_y']-1] = 1
             else:
-                tmp_trn_y = npz['arr_1']
-                tmp_test_y = npz['arr_3']
+                tmp_trn_y = npz['train_y']
+                tmp_test_y = npz['test_y']
             if not isinstance(train_x, np.ndarray):
                 train_x = tmp_trn_x
                 train_y = tmp_trn_y
