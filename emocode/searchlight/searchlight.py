@@ -49,6 +49,12 @@ def get_category_bold_ts(root_dir, subj, par_idx, roi):
             bold_ts[j, :, i] = roi_ts[trial_seq[i+1][j]:(trial_seq[i+1][j]+4)]
     np.save('%s_run%s_bold_ts.npy'%(subj, par_idx), bold_ts)
 
+def get_roi_mvps():
+    """"""
+
+def svm_searchlight(root_dir, subj):
+    """SVM based searchlight analysis."""
+
 def get_trial_sequence(root_dir, sid):
     """Get trial sequence for each emotion run."""
     beh_dir = os.path.join(root_dir, 'beh')
