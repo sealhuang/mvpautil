@@ -10,6 +10,44 @@ from pynit.base import unpack as pyunpack
 from nitools import roi as niroi
 from nitools.roi import extract_mean_ts
 
+def get_run_idx(scanlist_file, sid, par_idx):
+    """Get run index from one subject's info based on par index."""
+    [scan_info, subj_list] = pyunpack.readscanlist(scanlist_file)
+    for subj in subj_list:
+        if (subj.sess_ID[:2]==sid) and ('emo' in subj.run_info):
+            [run_list, par_list] = subj.getruninfo('emo')
+            if str(par_idx) in par_list:
+                return subj.sess_ID, '00'+run_list[par_list.index(str(par_idx))]
+    return None, None
+
+def get_category_bold_ts(root_dir, subj, par_idx, roi):
+    """Get mean BOLD time course for each emotion category."""
+    doc_dir = os.path.join(root_dir, 'doc')
+    nii_dir = os.path.join(root_dir, 'prepro')
+    par_dir = os.path.join(root_dir, 'par', 'emo', 'emotion_wise')
+    # read scanlist to get SID and run index
+    scanlist_file = os.path.join(doc_dir, 'scanlist.csv')
+    [sid, run_idx] = get_run_idx(scanlist_file, subj, par_idx)
+    # get nii data
+    nii_file = os.path.join(nii_dir,sid,run_idx, 'mni_sfunc_data_mcf_hp.nii.gz')
+    nii_data = nib.load(nii_file).get_data()
+    # read trial sequence for each emotion category
+    par_file = os.path.join(par_dir, 'run_%s.par'%(par_idx))
+    trial_info = open(par_file, 'r').readlines()
+    trial_info = [line.strip().split('\t') for line in trial_info]
+    # bold ts for each trial, code 1-Happy, 2-Fear, 3-Disgust, 4-Neutral
+    trial_seq = {1: [], 2:[], 3:[], 4:[]}
+    for line in trial_info:
+        if int(line[1]):
+            trial_seq[int(line[1])].append(int(float(line[0])/2))
+    # data shape: trials x time x emotion
+    bold_ts = np.zeros((22, 4, 4))
+    # get BOLD time course for each trial
+    roi_ts = niroi.extract_mean_ts(nii_data, roi)
+    for i in range(4):
+        for j in range(len(trial_seq[i+1])):
+            bold_ts[j, :, i] = roi_ts[trial_seq[i+1][j]:(trial_seq[i+1][j]+4)]
+    np.save('%s_run%s_bold_ts.npy'%(subj, par_idx), bold_ts)
 
 def get_trial_sequence(root_dir, sid):
     """Get trial sequence for each emotion run."""
@@ -285,9 +323,13 @@ def get_trial_tag(root_dir, subj):
 if __name__=='__main__':
     root_dir = r'/nfs/diskstation/projects/emotionPro'
 
+    roi_file = os.path.join(root_dir, 'group-level', 'rois', 'neurosynth',
+                            'cube_rois_r2.nii.gz')
+    roi_data = nib.load(roi_file).get_data()
+    get_category_bold_ts(root_dir, 'S1', 1, roi_data==20)
     #get_trial_sequence(root_dir, 'S1')
     #get_vxl_trial_rsp(root_dir)
-    emo_clf(root_dir, 'S1')
+    #emo_clf(root_dir, 'S1')
     
     #get_emo_ts(root_dir, seq)
     #get_conn(root_dir)
