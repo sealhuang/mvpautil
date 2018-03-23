@@ -52,8 +52,16 @@ def get_category_bold_ts(root_dir, subj, par_idx, roi):
 def get_roi_mvps():
     """"""
 
-def svm_searchlight(root_dir, subj):
+def svm_searchlight(root_dir, subj, mask_file):
     """SVM based searchlight analysis."""
+    doc_dir = os.path.join(root_dir, 'doc')
+    nii_dir = os.path.join(root_dir, 'prepro')
+    par_dir = os.path.join(root_dir, 'par', 'emo', 'emotion_wise')
+    # read mask file
+    mask_data = nib.load(mask_file).get_data()
+    mask_data = mask_data>0
+    clf_results = np.zeros((91, 109, 91, 6))
+
 
 def get_trial_sequence(root_dir, sid):
     """Get trial sequence for each emotion run."""
