@@ -49,18 +49,32 @@ def get_category_bold_ts(root_dir, subj, par_idx, roi):
             bold_ts[j, :, i] = roi_ts[trial_seq[i+1][j]:(trial_seq[i+1][j]+4)]
     np.save('%s_run%s_bold_ts.npy'%(subj, par_idx), bold_ts)
 
-def get_roi_mvps():
-    """"""
+def get_roi_mvps(subj, roi_coord):
+    """Get features and the corresponding labels for training and testing
+    data.
+    """
+
 
 def svm_searchlight(root_dir, subj, mask_file):
     """SVM based searchlight analysis."""
+    # dir config
     doc_dir = os.path.join(root_dir, 'doc')
     nii_dir = os.path.join(root_dir, 'prepro')
     par_dir = os.path.join(root_dir, 'par', 'emo', 'emotion_wise')
+    work_dir = os.path.join(root_dir, 'workshop', 'searchlight')
     # read mask file
+    mask_file = os.path.join(work_dir, 'mask', 'func_mask.nii.gz')
     mask_data = nib.load(mask_file).get_data()
     mask_data = mask_data>0
+    # svm results var
     clf_results = np.zeros((91, 109, 91, 6))
+    # for loop for voxel-wise searchlight
+    mask_coord = niroi.get_roi_coord(mask_data)
+    for c in mask_coord:
+        cube_roi = np.zeros((91, 109, 91))
+        cube_roi = niroi.cube_roi(cube_roi, c[0], c[1], c[2], 2, 1)
+        cube_coord = niroi.get_roi_coord(cube_roi)
+        [x_train, y_train, x_test, y_test] = get_roi_mvps(subj, cube_coord)
 
 
 def get_trial_sequence(root_dir, sid):
@@ -337,10 +351,15 @@ def get_trial_tag(root_dir, subj):
 if __name__=='__main__':
     root_dir = r'/nfs/diskstation/projects/emotionPro'
 
-    roi_file = os.path.join(root_dir, 'group-level', 'rois', 'neurosynth',
-                            'cube_rois_r2.nii.gz')
-    roi_data = nib.load(roi_file).get_data()
-    get_category_bold_ts(root_dir, 'S1', 1, roi_data==20)
+    ## get mean bold ts for each ROI
+    #roi_file = os.path.join(root_dir, 'group-level', 'rois', 'neurosynth',
+    #                        'cube_rois_r2.nii.gz')
+    #roi_data = nib.load(roi_file).get_data()
+    #get_category_bold_ts(root_dir, 'S1', 1, roi_data==20)
+
+    # SVM-based searchlight
+    svm_searchlight(root_dir, 'S1')
+
     #get_trial_sequence(root_dir, 'S1')
     #get_vxl_trial_rsp(root_dir)
     #emo_clf(root_dir, 'S1')
