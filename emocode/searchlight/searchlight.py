@@ -49,23 +49,44 @@ def get_category_bold_ts(root_dir, subj, par_idx, roi):
             bold_ts[j, :, i] = roi_ts[trial_seq[i+1][j]:(trial_seq[i+1][j]+4)]
     np.save('%s_run%s_bold_ts.npy'%(subj, par_idx), bold_ts)
 
-def get_roi_mvps(subj, roi_coord):
-    """Get features and the corresponding labels for training and testing
-    data.
-    """
+def get_subj_nii_list(root_dir, subj):
+    """Get subject's nii data."""
+    # read scanlist to get SID and run index
+    scanlist_file = os.path.join(root_dir, 'doc', 'scanlist.csv')
+    nii_list = []
+    for i in range(10):
+        [sid, run_idx] = get_run_idx(scanlist_file, subj, i)
+        # get nii data
+        nii_file = os.path.join(root_dir, 'prepro', sid, run_idx,
+                                'mni_sfunc_data_mcf_hp.nii.gz')
+        nii_data = nib.load(nii_file).get_data()
+        nii_list.append(nii_data)
+    return nii_list
 
+def get_subj_trial_seq(root_dir, subj):
+    """Get subject's trial info for each run."""
+    subj_info = {'S1': 'liqing',
+                 'S2': 'zhangjipeng',
+                 'S3': 'zhangdan',
+                 'S4': 'wanghuicui',
+                 'S5': 'zhuzhiyuan',
+                 'S6': 'longhailiang',
+                 'S7': 'liranran'}
+    par_dir = os.path.join(root_dir, 'par', 'emo', 'emotion_wise')
 
 def svm_searchlight(root_dir, subj, mask_file):
     """SVM based searchlight analysis."""
     # dir config
     doc_dir = os.path.join(root_dir, 'doc')
-    nii_dir = os.path.join(root_dir, 'prepro')
-    par_dir = os.path.join(root_dir, 'par', 'emo', 'emotion_wise')
     work_dir = os.path.join(root_dir, 'workshop', 'searchlight')
     # read mask file
     mask_file = os.path.join(work_dir, 'mask', 'func_mask.nii.gz')
     mask_data = nib.load(mask_file).get_data()
     mask_data = mask_data>0
+    # load nii data list
+    nii_list = get_subj_nii_list(root_dir, subj)
+    # get trial sequence info
+    seq_list = get_subj_trial_seq(root_dir, subj)
     # svm results var
     clf_results = np.zeros((91, 109, 91, 6))
     # for loop for voxel-wise searchlight
@@ -74,7 +95,7 @@ def svm_searchlight(root_dir, subj, mask_file):
         cube_roi = np.zeros((91, 109, 91))
         cube_roi = niroi.cube_roi(cube_roi, c[0], c[1], c[2], 2, 1)
         cube_coord = niroi.get_roi_coord(cube_roi)
-        [x_train, y_train, x_test, y_test] = get_roi_mvps(subj, cube_coord)
+        [x_train, y_train, x_test, y_test] = get_mvps(root_dir,subj, cube_coord)
 
 
 def get_trial_sequence(root_dir, sid):
