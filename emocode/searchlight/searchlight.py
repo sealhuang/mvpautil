@@ -65,19 +65,47 @@ def get_subj_nii_list(root_dir, subj):
 
 def get_subj_trial_seq(root_dir, subj):
     """Get subject's trial info for each run."""
-    subj_info = {'S1': 'liqing',
-                 'S2': 'zhangjipeng',
-                 'S3': 'zhangdan',
-                 'S4': 'wanghuicui',
-                 'S5': 'zhuzhiyuan',
-                 'S6': 'longhailiang',
+    beh_dir = os.path.join(root_dir, 'beh')
+    # get subject name
+    subj_info = {'S1': 'liqing', 'S2': 'zhangjipeng',
+                 'S3': 'zhangdan', 'S4': 'wanghuicui',
+                 'S5': 'zhuzhiyuan', 'S6': 'longhailiang',
                  'S7': 'liranran'}
-    par_dir = os.path.join(root_dir, 'par', 'emo', 'emotion_wise')
+    subj_name = subj_info[subj]
+    # trial sequence list var
+    trial_seq_list = []
+    for i in range(10):
+        record=os.path.join(beh_dir,'trial_record_%s_run%s.csv'%(subj_name,i+1))
+        info = open(record, 'r').readlines()
+        info.pop(0)
+        info = [line.strip().split(',') for line in info]
+        # dict for trial info
+        trial_dict = {}
+        for trial_idx in range(len(info)):
+            line = info[trial_idx]
+            if not line[0] in trial_dict:
+                # for subject response, change line[1] to line[2]
+                trial_dict[line[0]] = [[trial_idx], int(line[1])]
+            else:
+                trial_dict[line[0]][0].append(trial_idx)
+        trial_seq_list.append(trial_dict)
+    return trial_seq_list
+
+def get_roi_mvps(nii_list, trial_seq_list, roi_coord):
+    """Get MVPs from each nii file based on trial info."""
+    train_x = None
+    train_y = None
+    test_x = None
+    test_y = None
+    for i in range(len(nii_list)):
+        nii_data = nii_list[i]
+        trial_seq = trial_seq_list[i]
+
+
 
 def svm_searchlight(root_dir, subj, mask_file):
     """SVM based searchlight analysis."""
     # dir config
-    doc_dir = os.path.join(root_dir, 'doc')
     work_dir = os.path.join(root_dir, 'workshop', 'searchlight')
     # read mask file
     mask_file = os.path.join(work_dir, 'mask', 'func_mask.nii.gz')
@@ -95,7 +123,9 @@ def svm_searchlight(root_dir, subj, mask_file):
         cube_roi = np.zeros((91, 109, 91))
         cube_roi = niroi.cube_roi(cube_roi, c[0], c[1], c[2], 2, 1)
         cube_coord = niroi.get_roi_coord(cube_roi)
-        [x_train, y_train, x_test, y_test] = get_mvps(root_dir,subj, cube_coord)
+        [train_x, train_y, test_x, test_y] = get_roi_mvps(nii_list,
+                                                          seq_list,
+                                                          cube_coord)
 
 
 def get_trial_sequence(root_dir, sid):
