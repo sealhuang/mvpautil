@@ -165,7 +165,8 @@ def svm_searchlight(root_dir, subj):
     template_file = os.path.join(fsl_dir, 'data', 'standard',
                                  'MNI152_T1_2mm_brain.nii.gz')
     aff = nib.load(template_file).affine
-    nibase.save2nifti(data, aff, os.path.join(work_dir, subj+'_svm_acc.nii.gz'))
+    nibase.save2nifti(clf_results, aff,
+                      os.path.join(work_dir, subj+'_svm_acc.nii.gz'))
 
 def get_trial_sequence(root_dir, sid):
     """Get trial sequence for each emotion run."""
