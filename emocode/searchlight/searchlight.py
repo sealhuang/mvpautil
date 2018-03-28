@@ -72,6 +72,28 @@ def get_subj_nii_list(root_dir, subj):
         nii_list.append(trsp)
     return nii_list
 
+def get_subj_cope_list(root_dir, subj):
+    """Get subject's nii data."""
+    # read scanlist to get SID and run index
+    scanlist_file = os.path.join(root_dir, 'doc', 'scanlist.csv')
+    cope_list = []
+    for i in range(10):
+        [sid, run_idx] = get_run_idx(scanlist_file, subj, i+1)
+        # get nii data
+        train_file = os.path.join(root_dir, 'nii', sid, 'emo', run_idx,
+                                  'lss', 'train_merged_cope.nii.gz')
+        test_file = os.path.join(root_dir, 'nii', sid, 'emo', run_idx,
+                                 'lss', 'test_merged_cope.nii.gz')
+        train_cope = nib.load(train_file).get_data()
+        test_cope = nib.load(test_file).get_data()
+        cope = np.concatenate((train_cope, test_cope), axis=3)
+        # data normalization
+        m = np.mean(cope, axis=3, keepdims=True)
+        s = np.std(cope, axis=3, keepdims=True)
+        cope = (cope - m) / (s + 1e-5)
+        cope_list.append(cope)
+    return cope_list
+
 def get_subj_trial_seq(root_dir, subj):
     """Get subject's trial info for each run."""
     beh_dir = os.path.join(root_dir, 'beh')
@@ -100,6 +122,45 @@ def get_subj_trial_seq(root_dir, subj):
         trial_seq_list.append(trial_dict)
     return trial_seq_list
 
+def get_subj_cope_tag(root_dir, subj):
+    """Get subject's trial tag for each run."""
+    beh_dir = os.path.join(root_dir, 'beh')
+    par_dir = os.path.join(root_dir, 'par', 'emo', 'trial_wise')
+    # get subject name
+    subj_info = {'S1': 'liqing', 'S2': 'zhangjipeng',
+                 'S3': 'zhangdan', 'S4': 'wanghuicui',
+                 'S5': 'zhuzhiyuan', 'S6': 'longhailiang',
+                 'S7': 'liranran'}
+    subj_name = subj_info[subj]
+    # trial sequence list var
+    trial_tag_list = []
+    for i in range(10):
+        trial_tag = []
+        # load experiment record
+        record=os.path.join(beh_dir,'trial_record_%s_run%s.csv'%(subj_name,i+1))
+        record_info = open(record, 'r').readlines()
+        record_info.pop(0)
+        record_info = [line.strip().split(',') for line in record_info]
+        # load trial sequence info
+        train_seq_file = os.path.join(par_dir, 'trial_seq_%s_train.txt'%(i+1))
+        train_seq = open(train_seq_file, 'r').readlines()
+        train_seq = [line.strip().split('\\') for line in train_seq]
+        for line in train_seq:
+            for info_line in record_info:
+                if line[1]==info_line[0]:
+                    trial_tag.append(int(info_line[1]))
+                    break
+        test_seq_file = os.path.join(par_dir, 'trial_seq_%s_test.txt'%(i+1))
+        test_seq = open(test_seq_file, 'r').readlines()
+        test_seq = [line.strip().split('\\') for line in test_seq]
+        for line in test_seq:
+            for info_line in record_info:
+                if line[1]==info_line[0]:
+                    trial_tag.append(int(info_line[1]))
+                    break
+        trial_tag_list.append(trial_tag)
+    return trial_tag_list
+
 def get_roi_mvps(nii_list, trial_seq_list, roi_coord):
     """Get MVPs from each nii file based on trial info."""
     train_x = []
@@ -122,6 +183,25 @@ def get_roi_mvps(nii_list, trial_seq_list, roi_coord):
                 vtr = niroi.get_voxel_value(roi_coord, tmp)
                 train_x.append(vtr.tolist())
                 train_y.append(trial_seq[t][1])
+    return np.array(train_x), np.array(train_y), np.array(test_x), np.array(test_y)
+
+def get_roi_cope_mvps(cope_list, trial_tag_list, roi_coord):
+    """Get MVPs from each nii file based on trial info."""
+    train_x = []
+    train_y = []
+    test_x = []
+    test_y = []
+    for i in range(len(cope_list)):
+        cope_data = cope_list[i]
+        trial_tag = trial_tag_list[i]
+        for t in range(cope_data.shape[3]):
+            vtr = niroi.get_voxel_value(roi_coord, cope_data[..., t])
+            if t<72:
+                train_x.append(vtr.tolist())
+                train_y.append(trial_tag[t])
+            else:
+                test_x.append(vtr.tolist())
+                test_y.append(trial_tag[t])
     return np.array(train_x), np.array(train_y), np.array(test_x), np.array(test_y)
 
 def svm_searchlight(root_dir, subj):
@@ -167,6 +247,50 @@ def svm_searchlight(root_dir, subj):
     aff = nib.load(template_file).affine
     nibase.save2nifti(clf_results, aff,
                       os.path.join(work_dir, subj+'_svm_acc.nii.gz'))
+
+def svm_cope_searchlight(root_dir, subj):
+    """SVM based searchlight analysis."""
+    # dir config
+    work_dir = os.path.join(root_dir, 'workshop', 'searchlight')
+    # read mask file
+    print 'Load mask data ...'
+    mask_file = os.path.join(work_dir, 'mask', 'func_mask.nii.gz')
+    mask_data = nib.load(mask_file).get_data()
+    mask_data = mask_data>0
+    # load nii data list
+    print 'Load nii files ...'
+    cope_list = get_subj_cope_list(root_dir, subj)
+    # get trial sequence info
+    print 'Load trial sequence info ...'
+    tag_list = get_subj_cope_tag(root_dir, subj)
+    # svm results var
+    clf_results = np.zeros((91, 109, 91, 4))
+    # for loop for voxel-wise searchlight
+    mask_coord = niroi.get_roi_coord(mask_data)
+    ccount = 0
+    for c in mask_coord:
+        ccount += 1
+        print ccount
+        cube_roi = np.zeros((91, 109, 91))
+        cube_roi = niroi.cube_roi(cube_roi, c[0], c[1], c[2], 2, 1)
+        cube_coord = niroi.get_roi_coord(cube_roi)
+        [train_x, train_y, test_x, test_y] = get_roi_cope_mvps(cope_list,
+                                                               tag_list,
+                                                               cube_coord)
+        clf = svm.SVC(kernel='sigmoid')
+        clf.fit(train_x, train_y)
+        pred = clf.predict(test_x)
+        for e in range(4):
+            acc = np.sum(pred[test_y==(e+1)]==(e+1))*1.0 / np.sum(test_y==(e+1))
+            print acc
+            clf_results[c[0], c[1], c[2], e] = acc
+    # save to nifti
+    fsl_dir = os.getenv('FSL_DIR')
+    template_file = os.path.join(fsl_dir, 'data', 'standard',
+                                 'MNI152_T1_2mm_brain.nii.gz')
+    aff = nib.load(template_file).affine
+    nibase.save2nifti(clf_results, aff,
+                      os.path.join(work_dir, subj+'_svm_acc_cope.nii.gz'))
 
 def get_trial_sequence(root_dir, sid):
     """Get trial sequence for each emotion run."""
@@ -449,7 +573,8 @@ if __name__=='__main__':
     #get_category_bold_ts(root_dir, 'S1', 1, roi_data==20)
 
     # SVM-based searchlight
-    svm_searchlight(root_dir, 'S1')
+    #svm_searchlight(root_dir, 'S1')
+    svm_cope_searchlight(root_dir, 'S1')
 
     #get_trial_sequence(root_dir, 'S1')
     #get_vxl_trial_rsp(root_dir)
