@@ -292,6 +292,74 @@ def svm_cope_searchlight(root_dir, subj):
     nibase.save2nifti(clf_results, aff,
                       os.path.join(work_dir, subj+'_svm_acc_cope.nii.gz'))
 
+def random_svm_cope_searchlight(root_dir, subj):
+    """SVM based searchlight analysis."""
+    # dir config
+    work_dir = os.path.join(root_dir, 'workshop', 'searchlight')
+    # read mask file
+    print 'Load mask data ...'
+    mask_file = os.path.join(work_dir, 'mask', 'func_mask.nii.gz')
+    mask_data = nib.load(mask_file).get_data()
+    mask_data = mask_data>0
+    # load nii data list
+    print 'Load nii files ...'
+    cope_list = get_subj_cope_list(root_dir, subj)
+    # get trial sequence info
+    print 'Load trial sequence info ...'
+    tag_list = get_subj_cope_tag(root_dir, subj)
+    for i in range(100):
+        # svm results var
+        clf_results = np.zeros((91, 109, 91, 4))
+        # for loop for voxel-wise searchlight
+        mask_coord = niroi.get_roi_coord(mask_data)
+        ccount = 0
+        for c in mask_coord:
+            ccount += 1
+            print ccount
+            cube_roi = np.zeros((91, 109, 91))
+            cube_roi = niroi.cube_roi(cube_roi, c[0], c[1], c[2], 2, 1)
+            cube_coord = niroi.get_roi_coord(cube_roi)
+            [train_x, train_y, test_x, test_y] = get_roi_cope_mvps(cope_list,
+                                                                   tag_list,
+                                                                   cube_coord)
+            clf = svm.SVC(kernel='sigmoid')
+            train_y = np.random.permutation(train_y)
+            clf.fit(train_x, train_y)
+            pred = clf.predict(test_x)
+            for e in range(4):
+                acc = np.sum(pred[test_y==(e+1)]==(e+1))*1.0 / np.sum(test_y==(e+1))
+                print acc
+                clf_results[c[0], c[1], c[2], e] = acc
+        # save to nifti
+        fsl_dir = os.getenv('FSL_DIR')
+        template_file = os.path.join(fsl_dir, 'data', 'standard',
+                                     'MNI152_T1_2mm_brain.nii.gz')
+        aff = nib.load(template_file).affine
+        nibase.save2nifti(clf_results, aff,
+         os.path.join(work_dir, 'random_'+subj+'_svm_acc_cope_%s.nii.gz'%(i+1)))
+
+def get_roi_mvp_data(root_dir, subj, roi_file):
+    """Get MVP data from specific ROI."""
+    # dir config
+    work_dir = os.path.join(root_dir, 'workshop', 'searchlight')
+    # read ROI file
+    print 'Load ROI data ...'
+    roi_data = nib.load(roi_file).get_data()
+    # load cope data list
+    print 'Load cope files ...'
+    cope_list = get_subj_cope_list(root_dir, subj)
+    # get trial sequence info
+    print 'Load trial sequence info ...'
+    tag_list = get_subj_cope_tag(root_dir, subj)
+    # get ROI mvp data
+    roi_coord = niroi.get_roi_coord(roi_data)
+    [train_x, train_y, test_x, test_y] = get_roi_cope_mvps(cope_list,
+                                                           tag_list,
+                                                           roi_coord)
+    out_file = os.path.join(work_dir, 'cingulate_mvp_data.npz')
+    np.savez(out_file, train_x=train_x, train_y=train_y,
+             test_x=test_x, test_y=test_y)
+
 def get_trial_sequence(root_dir, sid):
     """Get trial sequence for each emotion run."""
     beh_dir = os.path.join(root_dir, 'beh')
@@ -574,7 +642,13 @@ if __name__=='__main__':
 
     # SVM-based searchlight
     #svm_searchlight(root_dir, 'S1')
-    svm_cope_searchlight(root_dir, 'S1')
+    #svm_cope_searchlight(root_dir, 'S1')
+    random_svm_cope_searchlight(root_dir, 'S1')
+
+    # ROI based analysis
+    #roi_file = os.path.join(root_dir, 'workshop', 'searchlight',
+    #                        'mask', 'para_anter_cingulate_gyrus_mask.nii.gz')
+    #get_roi_mvp_data(root_dir, 'S1', roi_file)
 
     #get_trial_sequence(root_dir, 'S1')
     #get_vxl_trial_rsp(root_dir)
