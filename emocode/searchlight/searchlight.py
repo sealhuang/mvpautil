@@ -94,6 +94,24 @@ def get_subj_cope_list(root_dir, subj):
         cope_list.append(cope)
     return cope_list
 
+def get_subj_raw_cope_list(root_dir, subj):
+    """Get subject's nii data."""
+    # read scanlist to get SID and run index
+    scanlist_file = os.path.join(root_dir, 'doc', 'scanlist.csv')
+    cope_list = []
+    for i in range(10):
+        [sid, run_idx] = get_run_idx(scanlist_file, subj, i+1)
+        # get nii data
+        train_file = os.path.join(root_dir, 'nii', sid, 'emo', run_idx,
+                                  'lss', 'train_merged_cope.nii.gz')
+        #test_file = os.path.join(root_dir, 'nii', sid, 'emo', run_idx,
+        #                         'lss', 'test_merged_cope.nii.gz')
+        train_cope = nib.load(train_file).get_data()
+        #test_cope = nib.load(test_file).get_data()
+        #cope = np.concatenate((train_cope, test_cope), axis=3)
+        cope_list.append(train_cope)
+    return cope_list
+
 def get_subj_trial_seq(root_dir, subj):
     """Get subject's trial info for each run."""
     beh_dir = os.path.join(root_dir, 'beh')
@@ -291,6 +309,31 @@ def svm_cope_searchlight(root_dir, subj):
     aff = nib.load(template_file).affine
     nibase.save2nifti(clf_results, aff,
                       os.path.join(work_dir, subj+'_svm_acc_cope.nii.gz'))
+
+def get_mean_cope(root_dir, subj):
+    # dir config
+    work_dir = os.path.join(root_dir, 'workshop', 'searchlight')
+    # load nii data list
+    print 'Load nii files ...'
+    cope_list = get_subj_cope_list(root_dir, subj)
+    # get trial sequence info
+    print 'Load trial sequence info ...'
+    tag_list = get_subj_cope_tag(root_dir, subj)
+    for i in range(10):
+        mean_cope = np.zeros((91, 109, 91, 4))
+        copes = cope_list[i]
+        tag = tag_list[i]
+        for c in range(4):
+            cond_idx = tag[:72]==(c+1)
+            cond_cope = copes[..., cond_idx]
+            mean_cope = np.mean(cond_cope, axis=3)
+        # save to nifti
+        fsl_dir = os.getenv('FSL_DIR')
+        template_file = os.path.join(fsl_dir, 'data', 'standard',
+                                     'MNI152_T1_2mm_brain.nii.gz')
+        aff = nib.load(template_file).affine
+        nibase.save2nifti(clf_results, aff,
+                      os.path.join(work_dir, subj+'_mean_copes.nii.gz'))
 
 def random_svm_cope_searchlight(root_dir, subj):
     """SVM based searchlight analysis."""
@@ -643,7 +686,9 @@ if __name__=='__main__':
     # SVM-based searchlight
     #svm_searchlight(root_dir, 'S1')
     #svm_cope_searchlight(root_dir, 'S1')
-    random_svm_cope_searchlight(root_dir, 'S1')
+    #random_svm_cope_searchlight(root_dir, 'S1')
+
+    get_mean_cope(root_dir, 'S1')
 
     # ROI based analysis
     #roi_file = os.path.join(root_dir, 'workshop', 'searchlight',
