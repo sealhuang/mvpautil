@@ -322,18 +322,18 @@ def get_mean_cope(root_dir, subj):
     for i in range(10):
         mean_cope = np.zeros((91, 109, 91, 4))
         copes = cope_list[i]
-        tag = tag_list[i]
+        tag = np.array(tag_list[i][:72])
         for c in range(4):
-            cond_idx = tag[:72]==(c+1)
+            cond_idx = tag==(c+1)
             cond_cope = copes[..., cond_idx]
-            mean_cope = np.mean(cond_cope, axis=3)
+            mean_cope[..., c] = np.mean(cond_cope, axis=3)
         # save to nifti
         fsl_dir = os.getenv('FSL_DIR')
         template_file = os.path.join(fsl_dir, 'data', 'standard',
                                      'MNI152_T1_2mm_brain.nii.gz')
         aff = nib.load(template_file).affine
-        nibase.save2nifti(clf_results, aff,
-                      os.path.join(work_dir, subj+'_mean_copes.nii.gz'))
+        nibase.save2nifti(mean_cope, aff,
+                    os.path.join(work_dir, subj+'_mean_copes_%s.nii.gz'%(i+1)))
 
 def random_svm_cope_searchlight(root_dir, subj):
     """SVM based searchlight analysis."""
