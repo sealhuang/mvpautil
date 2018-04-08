@@ -167,27 +167,25 @@ def bold2act(bold_ts):
 def mvp_data_preparation(trial_acts, trial_seqs):
     """Split trial-specific activation data into training and testing dataset.
     """
-    train_x = []
-    train_y = []
-    test_x = []
-    test_y = []
-    for i in range(len(nii_list)):
-        nii_data = nii_list[i]
-        trial_seq = trial_seq_list[i]
+    train_x = np.zeros((720, trial_acts.shape[1]))
+    train_y = np.zeros(720)
+    test_x = np.zeros((80, trial_acts.shape[1]))
+    test_y = np.zeros(80)
+    train_c = 0
+    test_c = 0
+    for i in range(10):
+        trial_seq = trial_seqs[i]
         for t in trial_seq:
-            if len(trial_seq[t][0])>1:
-                tmp = (nii_data[..., trial_seq[t][0][0]] + \
-                       nii_data[..., trial_seq[t][0][1]]) / 2
-                vtr = niroi.get_voxel_value(roi_coord, tmp)
-                test_x.append(vtr.tolist())
-                test_y.append(trial_seq[t][1])
-
+            trial_idx = np.array(trial_seq[t][0]) + i*88
+            if trial_idx.shape[0]>1:
+                test_x[test_c] = np.mean(trial_acts[trial_idx, :], axis=0)
+                test_y[test_c] = trial_seq[t][1]
+                test_c += 1
             else:
-                tmp = nii_data[..., trial_seq[t][0][0]]
-                vtr = niroi.get_voxel_value(roi_coord, tmp)
-                train_x.append(vtr.tolist())
-                train_y.append(trial_seq[t][1])
-    return np.array(train_x), np.array(train_y), np.array(test_x), np.array(test_y)
+                train_x[train_c] = trial_acts[trial_idx, :]
+                train_y[train_c] = trial_seq[t][1]
+                train_c += 1
+    return train_x, train_y, test_x, test_y
 
 def get_subj_cope_tag(root_dir, subj):
     """Get subject's trial tag for each run."""
@@ -608,7 +606,14 @@ if __name__=='__main__':
     # get trial sequence for each run
     seq_list = get_subj_trial_seq(root_dir, 'S1')
     # data preparation for classifier
-    mvp_data_preparation(trial_acts, seq_list)
+    train_x, train_y, test_x, test_y = mvp_data_preparation(trial_acts,seq_list)
+    # SVM-based classifier
+    clf = svm.SVC(kernel='sigmoid')
+    clf.fit(train_x, train_y)
+    pred = clf.predict(test_x)
+    for e in range(4):
+        acc = np.sum(pred[test_y==(e+1)]==(e+1))*1.0 / np.sum(test_y==(e+1))
+        print acc
 
 
 
