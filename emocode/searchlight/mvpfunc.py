@@ -187,6 +187,26 @@ def mvp_data_preparation(trial_acts, trial_seqs):
                 train_c += 1
     return train_x, train_y, test_x, test_y
 
+def roi_clf(root_dir, subj, roi):
+    """ROI-based classifier."""
+    bold_ts = get_roi_bold_ts(root_dir, subj, roi)
+    #np.save('%s_%s_bold_ts.npy'%('S1', 'rofa'), bold_ts)
+    # dimension reduction using pca
+    r_bold_ts = pca_transform(bold_ts, 0.99)
+    # extract trial-specific activation from BOLD time course
+    trial_acts = bold2act(r_bold_ts)
+    # get trial sequence for each run
+    seq_list = get_subj_trial_seq(root_dir, subj)
+    # data preparation for classifier
+    train_x, train_y, test_x, test_y = mvp_data_preparation(trial_acts,seq_list)
+    # SVM-based classifier
+    clf = svm.SVC(kernel='sigmoid')
+    clf.fit(train_x, train_y)
+    pred = clf.predict(test_x)
+    for e in range(4):
+        acc = np.sum(pred[test_y==(e+1)]==(e+1))*1.0 / np.sum(test_y==(e+1))
+        print acc
+
 def get_subj_cope_tag(root_dir, subj):
     """Get subject's trial tag for each run."""
     beh_dir = os.path.join(root_dir, 'beh')
@@ -593,29 +613,11 @@ if __name__=='__main__':
     # get mean activation for each emtion category
     #get_mean_emo_activation(root_dir, 'S1')
 
-    # get bold time courses for each ROI
+    # ROI-based classifier
     roi_file = os.path.join(root_dir, 'workshop', 'searchlight', 'mask',
                             'face_roi_mprm.nii.gz')
     roi_data = nib.load(roi_file).get_data()
-    bold_ts = get_roi_bold_ts(root_dir, 'S1', roi_data==1)
-    #np.save('%s_%s_bold_ts.npy'%('S1', 'rofa'), bold_ts)
-    # dimension reduction using pca
-    r_bold_ts = pca_transform(bold_ts, 0.99)
-    # extract trial-specific activation from BOLD time course
-    trial_acts = bold2act(r_bold_ts)
-    # get trial sequence for each run
-    seq_list = get_subj_trial_seq(root_dir, 'S1')
-    # data preparation for classifier
-    train_x, train_y, test_x, test_y = mvp_data_preparation(trial_acts,seq_list)
-    # SVM-based classifier
-    clf = svm.SVC(kernel='sigmoid')
-    clf.fit(train_x, train_y)
-    pred = clf.predict(test_x)
-    for e in range(4):
-        acc = np.sum(pred[test_y==(e+1)]==(e+1))*1.0 / np.sum(test_y==(e+1))
-        print acc
-
-
+    roi_clf(root_dir, 'S1', roi_data==1)
 
     # SVM-based searchlight
     #svm_searchlight(root_dir, 'S1')
