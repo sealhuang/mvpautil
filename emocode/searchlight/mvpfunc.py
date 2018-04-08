@@ -145,7 +145,7 @@ def pca_transform(data, var_ratio):
     for i in range(pca.n_components_):
         if np.sum(pca.explained_variance_ratio_[:(i+1)]) > var_ratio:
             break
-    print 'Preserve % dimensions'%(i+1)
+    print 'Preserve %s dimensions'%(i+1)
     return data_r[:, :(i+1)]
 
 def bold2act(bold_ts):
@@ -155,7 +155,7 @@ def bold2act(bold_ts):
     bold_ts = bold_ts / (s + 1e-10)
     # activation data init
     comp_num = bold_ts.shape[1]
-    act_data = np.zeros((352, comp_num))
+    act_data = np.zeros((880, comp_num))
     c = 0
     for i in range(10):
         for t in range(88):
