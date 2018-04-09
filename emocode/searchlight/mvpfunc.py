@@ -145,11 +145,12 @@ def pca_transform(data, var_ratio):
     for i in range(pca.n_components_):
         if np.sum(pca.explained_variance_ratio_[:(i+1)]) > var_ratio:
             break
-    print 'Preserve %s dimensions'%(i+1)
+    print 'Preserve %s dimensions for explaining %s variance.'%(i+1, var_ratio)
     return data_r[:, :(i+1)]
 
 def bold2act(bold_ts):
     """Extract trial-specific activation info from BOLD time courses."""
+    print 'Extract trial-specific activation from BOLD signals ...'
     # data normalization
     s = np.std(bold_ts, axis=0, keepdims=True)
     bold_ts = bold_ts / (s + 1e-10)
@@ -162,11 +163,13 @@ def bold2act(bold_ts):
             head_idx = i*355 + 4*t + 3
             tail_idx = i*355 + 4*t + 7
             act_data[c] = np.mean(bold_ts[head_idx:tail_idx], axis=0)
+            c += 1
     return act_data
 
 def mvp_data_preparation(trial_acts, trial_seqs):
     """Split trial-specific activation data into training and testing dataset.
     """
+    print 'Split trial-specific activation data into training and testing parts'
     train_x = np.zeros((720, trial_acts.shape[1]))
     train_y = np.zeros(720)
     test_x = np.zeros((80, trial_acts.shape[1]))
@@ -192,7 +195,7 @@ def roi_clf(root_dir, subj, roi):
     bold_ts = get_roi_bold_ts(root_dir, subj, roi)
     #np.save('%s_%s_bold_ts.npy'%('S1', 'rofa'), bold_ts)
     # dimension reduction using pca
-    r_bold_ts = pca_transform(bold_ts, 0.99)
+    r_bold_ts = pca_transform(bold_ts, 0.999)
     # extract trial-specific activation from BOLD time course
     trial_acts = bold2act(r_bold_ts)
     # get trial sequence for each run
@@ -200,12 +203,15 @@ def roi_clf(root_dir, subj, roi):
     # data preparation for classifier
     train_x, train_y, test_x, test_y = mvp_data_preparation(trial_acts,seq_list)
     # SVM-based classifier
-    clf = svm.SVC(kernel='sigmoid')
+    clf = svm.SVC(kernel='linear')
+    #clf = svm.SVC(kernel='sigmoid')
     clf.fit(train_x, train_y)
     pred = clf.predict(test_x)
     for e in range(4):
         acc = np.sum(pred[test_y==(e+1)]==(e+1))*1.0 / np.sum(test_y==(e+1))
         print acc
+    oacc = np.sum(pred==test_y)*1.0/test_y.shape[0]
+    print 'Overall accuracy: %s'%(oacc)
 
 def get_subj_cope_tag(root_dir, subj):
     """Get subject's trial tag for each run."""
@@ -617,7 +623,7 @@ if __name__=='__main__':
     roi_file = os.path.join(root_dir, 'workshop', 'searchlight', 'mask',
                             'face_roi_mprm.nii.gz')
     roi_data = nib.load(roi_file).get_data()
-    roi_clf(root_dir, 'S1', roi_data==1)
+    roi_clf(root_dir, 'S1', roi_data==9)
 
     # SVM-based searchlight
     #svm_searchlight(root_dir, 'S1')
