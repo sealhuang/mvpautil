@@ -85,7 +85,7 @@ def intra_session_mc(root_dir, sid, session):
 
 if __name__=='__main__':
     root_dir = r'/nfs/diskstation/projects/emotionPro'
-    #slicetimer(root_dir, 'S1')
+    slicetimer(root_dir, 'S1')
     intra_session_mc(root_dir, 'S1', 1)
 
 #doc_dir = os.path.join(base_dir, 'doc')
