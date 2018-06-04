@@ -8,10 +8,10 @@ function designmat = mkdesign(subj, run_idx, condition)
 %     for distinct image condition
 
 % load behavior record info
-%root_dir = '/nfs/diskstation/projects/emotionPro';
-%beh_dir = fullfile(root_dir, 'beh', 'mat');
-root_dir = '/Users/sealhuang/project/emotionPro';
-beh_dir = fullfile(root_dir, 'beh');
+root_dir = '/nfs/diskstation/projects/emotionPro';
+beh_dir = fullfile(root_dir, 'beh', 'mat');
+% root_dir = '/Users/sealhuang/project/emotionPro';
+% beh_dir = fullfile(root_dir, 'beh');
 mat_name =  strcat('final_', subj, '_record_run_', ...
                    num2str(run_idx), '.txt.mat');
 record = load(fullfile(beh_dir, mat_name));

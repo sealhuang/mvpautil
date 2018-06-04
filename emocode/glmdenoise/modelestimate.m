@@ -32,7 +32,7 @@ hrf = getcanonicalhrf(stimdur, tr)';
 
 % Define some useful constants.
 xyzsize = [64 64 33];  % the XYZ dimensions of the dataset
-numcond = 320;           % the number of conditions in this dataset
+numcond = 320;         % the number of conditions in this dataset
 
 % Define an options struct.  This specifies (1) that the HRF estimated 
 % from the data should always be used (even if it is very unlike the initial seed),
@@ -56,13 +56,9 @@ for zz=1:xyzsize(3)
         for yy=1:xyzsize(2)
             % Extract the time-series data for one voxel.
             data0 = cellfun(@(x) flatten(x(xx,yy,zz,:)), data, 'UniformOutput', 0);
-
-            % Analyze the time-series, specifying that we want to optimize the HRF.
             % We use the canonical HRF as the initial seed for the HRF.
-            [results0, cache] = GLMmodelestimate(design, data0, stimdur, tr, ...
-                                                'optimuze', hrf, opt, cache);
-                                            
-                                            
+            [results0, cache] = GLMmodelestimate(design(1:4), data0(1:4), stimdur, tr, ...
+                                                'optimize', hrf, opt, cache);
             % Record the results.
             hrfs(xx, yy, zz, :) = results0.modelmd{1};
             betas(xx, yy, zz, :) = results0.modelmd{2};

@@ -1,6 +1,6 @@
 function [results,cache] = GLMmodelestimate(design,data,stimdur,tr,hrfmodel,hrfknobs,opt,cache,mode)
 
-% function [results,cache] = GLMmodelestimate(design,data,stimdur,tr,hrfmodel,hrfknobs,resampling,opt,cache)
+% function [results,cache] = GLMmodelestimate(design,data,stimdur,tr,hrfmodel,hrfknobs,opt,cache)
 %
 % <design> is the experimental design.  There are three possible cases:
 %   1. A where A is a matrix with dimensions time x conditions.
@@ -9,10 +9,6 @@ function [results,cache] = GLMmodelestimate(design,data,stimdur,tr,hrfmodel,hrfk
 %   2. {A1 A2 A3 ...} where each of the A's are like the previous case.
 %      The different A's correspond to different runs, and different runs
 %      can have different numbers of time points.
-%   3. {{C1_1 C2_1 C3_1 ...} {C1_2 C2_2 C3_2 ...} ...} where Ca_b is a vector of 
-%      onset times (in seconds) for condition a in run b.  Time starts at 0 
-%      and is coincident with the acquisition of the first volume.  This case 
-%      is compatible only with <hrfmodel> set to 'assume'.
 % <data> is the time-series data with dimensions X x Y x Z x time or a cell vector of 
 %   elements that are each X x Y x Z x time.  XYZ can be collapsed such that the data 
 %   are given as a 2D matrix (XYZ x time); however, if you do this, then several of the 
@@ -146,15 +142,6 @@ function [results,cache] = GLMmodelestimate(design,data,stimdur,tr,hrfmodel,hrfk
 % polynomial regressors from both the model and the data. The purpose of 
 % this is to reduce the influence of low-frequency fluctuations (which
 % can be quite large in fMRI data) on the model accuracy metric.
-%
-% Notes on bootstrapping:
-% - Bootstrap samples are drawn from entire runs.  (Bootstrapping individual
-% data points would be inappropriate due to temporal correlations in fMRI noise.)
-% For example, if there are 10 runs, each bootstrap sample consists of 10 runs 
-% drawn with replacement from the 10 runs.
-% - In cases of unbalanced designs, it is possible that a bootstrap sample contains
-% no occurrences of a given condition; in this case, a warning is reported and
-% the beta weight estimated for that condition is set to zero.
 %
 % Notes on the estimation of a global HRF:
 % - When <hrfmodel> is 'optimize', we estimate a global HRF from the data.  
@@ -411,7 +398,7 @@ if ~opt.suppressoutput, fprintf('done.\n'); end
 if ~(mode==2)
   if ~opt.suppressoutput, fprintf('computing model fits...'); end
   % compute the time-series fit corresponding to the final model estimate
-  modelfit = GLMpredictresponses(results.modelmd,design,tr,cellfun(@(x) size(x,1),data),dimdata);
+  modelfit = GLMpredict(results.modelmd,design,tr,cellfun(@(x) size(x,1),data),dimdata);
   if ~opt.suppressoutput, fprintf('done.\n'); end
 end
 
@@ -638,12 +625,12 @@ case 'optimize'
         design2{p} = combinedmatrix{p}*design2{p};  % time x conditions
     
       end
-
+      
       % merge design
       merged_design = zeros(length(design2)*size(design2{1}, 1), length(design2)*size(design2{1}, 2));
       for p=1:length(design2)
-        merged_design([(1+(p-1)*size(design2{1}, 1)):(p*size(design2{1}, 1)), ...
-                       (1+(p-1)*size(design2{1}, 2)):(p*size(design2{1}, 2))]) = design2{p};
+        merged_design((1+(p-1)*size(design2{1}, 1)):(p*size(design2{1}, 1)), ...
+                       (1+(p-1)*size(design2{1}, 2)):(p*size(design2{1}, 2))) = design2{p};
       end
       
       % estimate the amplitudes
@@ -704,6 +691,7 @@ case 'optimize'
 
       % if HRF is all zeros (this can happen when the data are all zeros), get out prematurely
       if all(currenthrf==0)
+        warning('Script break!');
         break;
       end
 
