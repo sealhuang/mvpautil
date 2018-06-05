@@ -67,5 +67,9 @@ for zz=1:xyzsize(3)
     end
 end
 
+hrfs = flip(hrfs, 1);
+betas = flip(betas, 1);
+R2 = flip(R2, 1);
+
 end
 
