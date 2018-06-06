@@ -20,7 +20,7 @@ def mat2nii(mat_structure, data_name, template_file, out_file):
     save2nifti(data, aff, out_file)
 
 if __name__=='__main__':
-    root_dir = r'/nfs/diskstation/projects/emotionPro/workshop/glmdenoise'
+    root_dir = r'/nfs/diskstation/projects/emotionPro/workshop/glmmodel'
     nii_dir = os.path.join(root_dir, 'nii')
     template_file = os.path.join(nii_dir, 'S1', 'mcsfunc_1.nii.gz')
     mat_file = os.path.join(root_dir, 'script', 'S1_results_s1.mat')

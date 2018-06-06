@@ -18,7 +18,7 @@ def slicetimer(root_dir, sid):
     # dir config
     doc_dir = os.path.join(root_dir, 'doc')
     nii_dir = os.path.join(root_dir, 'nii')
-    work_dir = os.path.join(root_dir, 'workshop', 'glmdenoise')
+    work_dir = os.path.join(root_dir, 'workshop', 'glmmodel')
     subj_dir = os.path.join(work_dir, 'nii', sid)
     if not os.path.exists(subj_dir):
         os.makedirs(subj_dir, 0755)
@@ -45,7 +45,7 @@ def slicetimer(root_dir, sid):
 def intra_session_mc(root_dir, sid, session):
     """motion correction across runs within one session."""
     # dir config
-    work_dir = os.path.join(root_dir, 'workshop', 'glmdenoise')
+    work_dir = os.path.join(root_dir, 'workshop', 'glmmodel')
     subj_dir = os.path.join(work_dir, 'nii', sid)
     if not os.path.exists(subj_dir):
         os.makedirs(subj_dir, 0755)
@@ -85,7 +85,7 @@ def intra_session_mc(root_dir, sid, session):
 def inter_session_mc(root_dir, sid, session):
     """motion correction across runs from different sessions."""
     # dir config
-    work_dir = os.path.join(root_dir, 'workshop', 'glmdenoise')
+    work_dir = os.path.join(root_dir, 'workshop', 'glmmodel')
     subj_dir = os.path.join(work_dir, 'nii', sid, 'inter_session')
     if not os.path.exists(subj_dir):
         os.makedirs(subj_dir, 0755)

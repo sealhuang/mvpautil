@@ -7,7 +7,7 @@ function [design, data, s1results, hrfs, betas, R2] = glmdenoise_pipeline(subj, 
 
 % dir config
 root_dir = '/nfs/diskstation/projects/emotionPro';
-nii_dir = fullfile(root_dir, 'workshop', 'glmdenoise', 'nii');
+nii_dir = fullfile(root_dir, 'workshop', 'glmmodel', 'nii');
 % config run list
 run_list = reshape(1:10, 5, 2);
 run_list = run_list(:, session);
