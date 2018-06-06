@@ -1,10 +1,14 @@
-function [design, data, hrfs, beta_train, beta_val, r2_train, r2_val] = modelestimate(subj, session)
+function [design, data, hrfs, beta_train, beta_val, r2_train, r2_val] = modelestimate(sid, session)
 % 
 % Script for distinct image neural response estimate.
-% [design, data, hrfs, beta_train, beta_val, r2_train, r2_val] = modelestimate(subj, session)
-%     subj: subject name
+% [design, data, hrfs, beta_train, beta_val, r2_train, r2_val] = modelestimate(sid, session)
+%     sid: subject index
 %     session: session index
 
+% subject names
+subj_names = {'liqing', 'zhangjipeng', 'zhangdan', 'wanghuicui', ...
+              'zhuzhiyuan', 'longhailiang', 'liranran'};
+subj = subj_names{sid};
 % dir config
 root_dir = '/nfs/diskstation/projects/emotionPro';
 nii_dir = fullfile(root_dir, 'workshop', 'glmdenoise', 'nii');
@@ -17,7 +21,8 @@ data = cell(1, length(run_list));
 
 for i=1:length(run_list)
     design{i} = mkdesign(subj, run_list(i), 1);
-    nii_file = fullfile(nii_dir, 'S1', 'intra_session', strcat('mcsfunc_', num2str(run_list(i)), '.nii.gz'));
+    nii_file = fullfile(nii_dir, strcat('S', num2str(sid)), 'intra_session', ...
+                        strcat('mcsfunc_', num2str(run_list(i)), '.nii.gz'));
     nii = load_nii(nii_file);
     size(nii.img)
     data{i} = nii.img;
