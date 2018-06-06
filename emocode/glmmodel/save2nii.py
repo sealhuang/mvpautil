@@ -23,7 +23,7 @@ if __name__=='__main__':
     root_dir = r'/nfs/diskstation/projects/emotionPro/workshop/glmdenoise'
     nii_dir = os.path.join(root_dir, 'nii')
     template_file = os.path.join(nii_dir, 'S1', 'mcsfunc_1.nii.gz')
-    mat_file = os.path.join(root_dir, 'script', 'S1_results_train_s1.mat')
+    mat_file = os.path.join(root_dir, 'script', 'S1_results_s1.mat')
     mat = loadmat(mat_file)
     mat2nii(mat, 'r2_train', template_file, 'S1_R2_train_s1.nii.gz') 
 
