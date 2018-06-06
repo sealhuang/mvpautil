@@ -55,7 +55,7 @@ def intra_session_mc(root_dir, sid, session):
     sel_runs = run_list[session]
     for i in range(len(sel_runs)):
         src_file = os.path.join(subj_dir, 'sfunc_%s'%(sel_runs[i]))
-        ref_vol =os.path.join(subj_dir, 'ref_vol_session%s'%(session))
+        ref_vol = os.path.join(subj_dir, 'ref_vol_session%s'%(session))
         # select reference volume from the first run data
         if not i:
             sel_ref_vol_cmd = ['fslroi', src_file, ref_vol, '177', '1']
@@ -82,11 +82,60 @@ def intra_session_mc(root_dir, sid, session):
         print ' '.join(mv_cmd)
         subprocess.call(' '.join(mv_cmd), shell=True)
 
+def inter_session_mc(root_dir, sid, session):
+    """motion correction across runs from different sessions."""
+    # dir config
+    work_dir = os.path.join(root_dir, 'workshop', 'glmdenoise')
+    subj_dir = os.path.join(work_dir, 'nii', sid, 'inter_session')
+    if not os.path.exists(subj_dir):
+        os.makedirs(subj_dir, 0755)
+    mc_dir = os.path.join(subj_dir, 'mc')
+    run_list = {1: [1, 2, 3, 4, 5],
+                2: [6, 7, 8, 9, 10]}
+    sel_runs = run_list[session]
+    for i in range(len(sel_runs)):
+        src_file = os.path.join(subj_dir, 'sfunc_%s'%(sel_runs[i]))
+        # select reference volume from the first run data
+        ref_vol = os.path.join(subj_dir, 'ref_vol_session%s'%(session))
+        if not i:
+            sel_ref_vol_cmd = ['fslroi', src_file, ref_vol, '177', '1']
+            print ' '.join(sel_ref_vol_cmd)
+            subprocess.call(' '.join(sel_ref_vol_cmd), shell=True)
+            if session==2:
+                s1_ref_vol = os.path.join(subj_dir, 'ref_vol_session1')
+                s2_ref_vol = os.path.join(subj_dir, 'ref_vol_session2')
+                coreg_cmd = ['mcflirt', '-in', s2_ref_vol,
+                             '-reffile', s1_ref_vol]
+                subprocess.call(' '.join(coreg_cmd), shell=True)
+        if session==2:
+            ref_vol = os.path.join(subj_dir, 'ref_vol_session2_mcf')
+        # mc process
+        mc_file = os.path.join(subj_dir, 'mcsfunc_%s'%(sel_runs[i]))
+        mc_cmd = ['mcflirt', '-in', src_file, '-out', mc_file, '-mats',
+                  '-plots', '-reffile', ref_vol, '-rmsrel', '-rmsabs',
+                  '-sinc_final']
+        print ' '.join(mc_cmd)
+        subprocess.call(' '.join(mc_cmd), shell=True)
+        # move mc files into run-specific dir
+        run_mc_dir = os.path.join(mc_dir, 'run%s'%(sel_runs[i]))
+        if not os.path.exists(run_mc_dir):
+            os.makedirs(run_mc_dir, 0755)
+        mc_res = ['.mat', '.par', '_abs.rms', '_abs_mean.rms', '_rel.rms',
+                  '_rel_mean.rms']
+        mv_cmd = ['mv', '-f']
+        for item in mc_res:
+            tmp = os.path.join(subj_dir, 'mcsfunc_%s'%(sel_runs[i])+item)
+            mv_cmd.append(tmp)
+        mv_cmd.append(run_mc_dir)
+        print ' '.join(mv_cmd)
+        subprocess.call(' '.join(mv_cmd), shell=True)
+
 
 if __name__=='__main__':
     root_dir = r'/nfs/diskstation/projects/emotionPro'
-    slicetimer(root_dir, 'S1')
-    intra_session_mc(root_dir, 'S1', 1)
+    #slicetimer(root_dir, 'S1')
+    #intra_session_mc(root_dir, 'S1', 1)
+    inter_session_mc(root_dir, 'S1', 2)
 
 #doc_dir = os.path.join(base_dir, 'doc')
 #nii_dir = os.path.join(base_dir, 'nii')

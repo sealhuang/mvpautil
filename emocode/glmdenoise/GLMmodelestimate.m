@@ -535,8 +535,8 @@ case 'fir'
   % merge design
   merged_design = zeros(length(design)*size(design{1}, 1), length(design)*size(design{1}, 2));
   for p=1:length(design)
-      merged_design([(1+(p-1)*size(design{1}, 1)):(p*size(design{1}, 1)), ...
-                     (1+(p-1)*size(design{1}, 2)):(p*size(design{1}, 2))]) = design{p};
+      merged_design((1+(p-1)*size(design{1}, 1)):(p*size(design{1}, 1)), ...
+                    (1+(p-1)*size(design{1}, 2)):(p*size(design{1}, 2))) = design{p};
   end
   % fit model
   %f = mtimescell(olsmatrix2(cat(1,design{:})),data2);  % L*conditions x voxels
@@ -564,8 +564,8 @@ case 'assume'
   % merge design
   merged_design = zeros(length(design)*size(design{1}, 1), length(design)*size(design{1}, 2));
   for p=1:length(design)
-      merged_design([(1+(p-1)*size(design{1}, 1)):(p*size(design{1}, 1)), ...
-                     (1+(p-1)*size(design{1}, 2)):(p*size(design{1}, 2))]) = design{p};
+      merged_design((1+(p-1)*size(design{1}, 1)):(p*size(design{1}, 1)), ...
+                    (1+(p-1)*size(design{1}, 2)):(p*size(design{1}, 2))) = design{p};
   end
   
   % fit model
