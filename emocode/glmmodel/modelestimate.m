@@ -21,7 +21,7 @@ data = cell(1, length(run_list));
 
 for i=1:length(run_list)
     design{i} = mkdesign(subj, run_list(i), 1);
-    nii_file = fullfile(nii_dir, strcat('S', num2str(sid)), 'intra_session', ...
+    nii_file = fullfile(nii_dir, strcat('S', num2str(sid)), ...
                         strcat('mcsfunc_', num2str(run_list(i)), '.nii.gz'));
     nii = load_nii(nii_file);
     size(nii.img)
