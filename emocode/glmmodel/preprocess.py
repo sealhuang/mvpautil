@@ -86,7 +86,7 @@ def inter_session_mc(root_dir, sid, session):
     """motion correction across runs from different sessions."""
     # dir config
     work_dir = os.path.join(root_dir, 'workshop', 'glmmodel')
-    subj_dir = os.path.join(work_dir, 'nii', sid, 'inter_session')
+    subj_dir = os.path.join(work_dir, 'nii', sid)
     if not os.path.exists(subj_dir):
         os.makedirs(subj_dir, 0755)
     mc_dir = os.path.join(subj_dir, 'mc')
@@ -133,9 +133,9 @@ def inter_session_mc(root_dir, sid, session):
 
 if __name__=='__main__':
     root_dir = r'/nfs/diskstation/projects/emotionPro'
-    slicetimer(root_dir, 'S1')
+    #slicetimer(root_dir, 'S1')
     #intra_session_mc(root_dir, 'S1', 1)
-    inter_session_mc(root_dir, 'S1', 2)
+    inter_session_mc(root_dir, 'S1', 1)
 
 #doc_dir = os.path.join(base_dir, 'doc')
 #nii_dir = os.path.join(base_dir, 'nii')

@@ -28,7 +28,7 @@ if __name__=='__main__':
     var = ['hrfs', 'beta_train', 'beta_val', 'r2_train', 'r2_val']
     template_file = os.path.join(nii_dir, sid, 'mcsfunc_1.nii.gz')
     for s in [1, 2]:
-        mat_file = os.path.join(betas_dir, sid, '%s_results_s%s.mat'%(sid, s))
+        mat_file = os.path.join(beta_dir, sid, '%s_results_s%s.mat'%(sid, s))
         mat = loadmat(mat_file)
         for v in var:
             outfile = os.path.join(beta_dir, sid, '%s_%s_s%s.nii.gz'%(sid, v,s))
