@@ -22,9 +22,16 @@ def mat2nii(mat_structure, data_name, template_file, out_file):
 if __name__=='__main__':
     root_dir = r'/nfs/diskstation/projects/emotionPro/workshop/glmmodel'
     nii_dir = os.path.join(root_dir, 'nii')
-    template_file = os.path.join(nii_dir, 'S1', 'mcsfunc_1.nii.gz')
-    mat_file = os.path.join(root_dir, 'script', 'S1_results_s1.mat')
-    mat = loadmat(mat_file)
-    mat2nii(mat, 'r2_train', template_file, 'S1_R2_train_s1.nii.gz') 
+    beta_dir = os.path.join(root_dir, 'betas')
+
+    sid = 'S1'
+    var = ['hrfs', 'beta_train', 'beta_val', 'r2_train', 'r2_val']
+    template_file = os.path.join(nii_dir, sid, 'mcsfunc_1.nii.gz')
+    for s in [1, 2]:
+        mat_file = os.path.join(betas_dir, sid, '%s_results_s%s.mat'%(sid, s))
+        mat = loadmat(mat_file)
+        for v in var:
+            outfile = os.path.join(beta_dir, sid, '%s_%s_s%s.nii.gz'%(sid, v,s))
+            mat2nii(mat, v, template_file, outfile)
 
 
