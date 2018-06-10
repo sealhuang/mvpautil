@@ -172,14 +172,18 @@ def get_roi_cope_mvps(cope_list, trial_tag_list, roi_coord):
 def svm_searchlight(root_dir, sid):
     """SVM based searchlight analysis."""
     # dir config
+    beta_dir = os.path.join(root_dir, 'workshop', 'glmmodel', 'nii')
     work_dir = os.path.join(root_dir, 'workshop', 'glmmodel', 'searchlight')
-    subj_dir = os.path.join(work_dir, sid)
     # read mask file
     print 'Load mask data ...'
-    mask_file = os.path.join(work_dir, 'mask', 'func_mask.nii.gz')
+    # TODO: generate a mean BOLD map as functional mask
+    mask_file = os.path.join(work_dir, sid, 'func_mask.nii.gz')
     mask_data = nib.load(mask_file).get_data()
     mask_data = mask_data>0
-    # load nii data list
+    # load estimated beta maps
+    print 'Load estimated beta maps from training datasets ...'
+    train_betas_s1_file = os.path.join()
+
     print 'Load nii files ...'
     cope_list = get_subj_cope_list(root_dir, subj)
     # get trial sequence info
