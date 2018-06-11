@@ -11,6 +11,25 @@ from nitools import roi as niroi
 from nitools import base as nibase
 from nitools.roi import extract_mean_ts
 
+
+def gen_func_mask(root_dir, sid):
+    """Generate a functional mask based on reference frame from two sessions."""
+    work_dir = os.path.join(root_dir, 'workshop', 'glmmodel', 'searchlight')
+    db_dir = os.path.join(root_dir, 'workshop', 'glmmodel', 'nii')
+    ref_1 = os.path.join(db_dir, sid, 'ref_vol_session1.nii.gz')
+    ref_2 = os.path.join(db_dir, sid, 'ref_vol_session2_mcf.nii.gz')
+    ref_1_data = nib.load(ref_1).get_data()
+    ref_2_data = nib.load(ref_2).get_data()
+    mean_data = (ref_1_data + ref_2_data) / 2
+    mean_data = mean_data.reshape(-1)
+    mean_data.sort()
+    thresh = int(mean_data[int(np.around(mean_data.shape[0]*0.8))]*0.5)
+    print 'Threshold for mean reference frame: %s'%(thresh)
+    mask_file = os.path.join(work_dir, sid, 'func_mask.nii.gz')
+    cmd_str = ['fslmaths', ref_1, '-add', ref_2, '-div', '2', '-thr',
+               str(thresh), '-bin', mask_file]
+    print ' '.join(cmd_str)
+
 def get_run_idx(scanlist_file, sid, par_idx):
     """Get run index from one subject's info based on par index."""
     [scan_info, subj_list] = pyunpack.readscanlist(scanlist_file)
@@ -538,8 +557,11 @@ def get_trial_tag(root_dir, subj):
 if __name__=='__main__':
     root_dir = r'/nfs/diskstation/projects/emotionPro'
 
+    # generate functional mask for each subject
+    gen_func_mask(root_dir, 'S1')
+
     # SVM-based searchlight
-    svm_searchlight(root_dir, 'S1')
+    #svm_searchlight(root_dir, 'S1')
     #random_svm_cope_searchlight(root_dir, 'S1')
 
     #get_trial_sequence(root_dir, 'S1')
