@@ -6,10 +6,8 @@ import numpy as np
 import nibabel as nib
 from sklearn import svm
 
-from pynit.base import unpack as pyunpack
 from nitools import roi as niroi
 from nitools import base as nibase
-from nitools.roi import extract_mean_ts
 
 
 def gen_func_mask(root_dir, sid):
@@ -146,7 +144,9 @@ def svm_searchlight(root_dir, sid):
         train_x = np.array(train_x)
         test_x = np.array(test_x)
         # classifier
-        clf = svm.SVC(kernel='sigmoid')
+        # kernel can be specified as linear, poly, rbf, and sigmod
+        kernel = 'linear'
+        clf = svm.SVC(kernel=kernel)
         clf.fit(train_x, train_label)
         pred = clf.predict(test_x)
         for e in range(4):
@@ -155,8 +155,17 @@ def svm_searchlight(root_dir, sid):
             clf_results[c[0], c[1], c[2], e] = acc
     # save to nifti
     aff = nib.load(mask_file).affine
-    nibase.save2nifti(clf_results, aff,
-                      os.path.join(work_dir,sid,'svm_acc.nii.gz'))
+    result_file = os.path.join(work_dir, sid, 'svm_%s.nii.gz'%(kernel))
+    nibase.save2nifti(clf_results, aff, result_file)
+    func2anat_mat = os.path.join(root_dir, 'workshop', 'glmmodel', 'nii',
+                                 sid, 'ref_vol2highres.mat')
+    t1brain_vol = os.path.join(root_dir, 'nii', sid+'P1', '3danat',
+                               'fsl_reg', 'T1_brain.nii.gz')
+    if os.path.exists(func2anat_mat):
+        result2_file = os.path.join(work_dir, sid, 'svm_%s_highres.nii.gz')
+        str_cmd = ['flirt', '-in', result_file, '-ref', t1brain_vol,
+                   '-applyxfm', '-init', func2anat_mat, '-out', result2_file]
+        os.system(' '.join(str_cmd))
 
 def random_svm_cope_searchlight(root_dir, subj):
     """SVM based searchlight analysis."""

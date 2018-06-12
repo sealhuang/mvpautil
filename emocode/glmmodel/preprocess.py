@@ -130,36 +130,28 @@ def inter_session_mc(root_dir, sid, session):
         print ' '.join(mv_cmd)
         subprocess.call(' '.join(mv_cmd), shell=True)
 
+def func2anat(root_dir, sid):
+    """Generate a linear registration matrix from functional image to
+    anatomical image.
+    """
+    # dir config
+    anat_dir = os.path.join(root_dir, 'nii', sid+'P1', '3danat', 'reg_fsl')
+    work_dir = os.path.join(root_dir, 'workshop', 'glmmodel')
+    subj_dir = os.path.join(work_dir, 'nii', sid)
+
+    func_vol = os.path.join(subj_dir, 'ref_vol_session1.nii.gz')
+    t1_vol = os.path.join(anat_dir, 'T1.nii.gz')
+    t1brain_vol = os.path.join(anat_dir, 'T1_brain.nii.gz')
+    out_mat = os.path.join(subj_dir, 'ref_vol2highres')
+    cmd_str = ['epi_reg', '--epi=%s'%(func_vol), '--t1=%s'%(t1_vol),
+               '--t1brain=%s'%(t1brain_vol), '--out=%s'%(out_mat)]
+    subprocess.call(' '.join(cmd_str), shell=True)
+
 
 if __name__=='__main__':
     root_dir = r'/nfs/diskstation/projects/emotionPro'
     #slicetimer(root_dir, 'S1')
     #intra_session_mc(root_dir, 'S1', 1)
-    inter_session_mc(root_dir, 'S1', 1)
-
-#doc_dir = os.path.join(base_dir, 'doc')
-#nii_dir = os.path.join(base_dir, 'nii')
-#pro_dir = os.path.join(base_dir, 'prepro')
-#
-#tmpl = os.path.join(base_dir, 'script', 'prepro_template.sh')
-#
-#sessid_file = os.path.join(doc_dir, 'sessid')
-#sessid = open(sessid_file).readlines()
-#sessid = [line.strip() for line in sessid]
-#
-#for sid in sessid:
-#    subj_dir = os.path.join(nii_dir, sid, 'emo')
-#    rlf = open(os.path.join(subj_dir, 'emo.rlf')).readlines()
-#    rlf = [line.strip() for line in rlf]
-#    for run in rlf:
-#        print 'SID %s -- Run %s'%(sid, run)
-#        out_f = os.path.join(base_dir, 'script', sid+'_'+run+'.sh')
-#        replacements = {'XXXX': sid, 'YYYY': run, 'ZZZZ': sid[:3]+'1'}
-#        with open(tmpl) as infile, open(out_f, 'w') as outfile:
-#            for line in infile:
-#                for src, target in replacements.iteritems():
-#                    line = line.replace(src, target)
-#                outfile.write(line)
-#        os.system('chmod 755 %s'%(out_f))
-#        subprocess.call(out_f, shell=True)
+    #inter_session_mc(root_dir, 'S1', 1)
+    func2anat(root_dir, 'S1')
 
