@@ -160,7 +160,7 @@ def svm_searchlight(root_dir, sid):
     func2anat_mat = os.path.join(root_dir, 'workshop', 'glmmodel', 'nii',
                                  sid, 'ref_vol2highres.mat')
     t1brain_vol = os.path.join(root_dir, 'nii', sid+'P1', '3danat',
-                               'fsl_reg', 'T1_brain.nii.gz')
+                               'reg_fsl', 'T1_brain.nii.gz')
     if os.path.exists(func2anat_mat):
         result2_file = os.path.join(work_dir, sid, 'svm_%s_highres.nii.gz')
         str_cmd = ['flirt', '-in', result_file, '-ref', t1brain_vol,
