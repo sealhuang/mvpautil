@@ -167,51 +167,98 @@ def svm_searchlight(root_dir, sid):
                    '-applyxfm', '-init', func2anat_mat, '-out', result2_file]
         os.system(' '.join(str_cmd))
 
-def random_svm_cope_searchlight(root_dir, subj):
-    """SVM based searchlight analysis."""
-    # dir config
-    work_dir = os.path.join(root_dir, 'workshop', 'searchlight')
-    # read mask file
+def random_svm_searchlight(root_dir, subj):
+    """SVM based searchlight analysis, used to generate a random baseline."""
+    #-- dir config
+    beta_dir = os.path.join(root_dir, 'workshop', 'glmmodel', 'betas')
+    work_dir = os.path.join(root_dir, 'workshop', 'glmmodel', 'searchlight')
+    
+    #-- read mask file
     print 'Load mask data ...'
-    mask_file = os.path.join(work_dir, 'mask', 'func_mask.nii.gz')
+    mask_file = os.path.join(work_dir, sid, 'func_mask.nii.gz')
     mask_data = nib.load(mask_file).get_data()
     mask_data = mask_data>0
-    # load nii data list
-    print 'Load nii files ...'
-    cope_list = get_subj_cope_list(root_dir, subj)
-    # get trial sequence info
-    print 'Load trial sequence info ...'
-    tag_list = get_subj_cope_tag(root_dir, subj)
-    for i in range(100):
-        # svm results var
-        clf_results = np.zeros((91, 109, 91, 4))
-        # for loop for voxel-wise searchlight
-        mask_coord = niroi.get_roi_coord(mask_data)
-        ccount = 0
-        for c in mask_coord:
-            ccount += 1
-            print ccount
-            cube_roi = np.zeros((91, 109, 91))
-            cube_roi = niroi.cube_roi(cube_roi, c[0], c[1], c[2], 2, 1)
-            cube_coord = niroi.get_roi_coord(cube_roi)
-            [train_x, train_y, test_x, test_y] = get_roi_cope_mvps(cope_list,
-                                                                   tag_list,
-                                                                   cube_coord)
-            clf = svm.SVC(kernel='sigmoid')
-            train_y = np.random.permutation(train_y)
-            clf.fit(train_x, train_y)
-            pred = clf.predict(test_x)
-            for e in range(4):
-                acc = np.sum(pred[test_y==(e+1)]==(e+1))*1.0 / np.sum(test_y==(e+1))
-                print acc
-                clf_results[c[0], c[1], c[2], e] = acc
-        # save to nifti
-        fsl_dir = os.getenv('FSL_DIR')
-        template_file = os.path.join(fsl_dir, 'data', 'standard',
-                                     'MNI152_T1_2mm_brain.nii.gz')
-        aff = nib.load(template_file).affine
-        nibase.save2nifti(clf_results, aff,
-         os.path.join(work_dir, 'random_'+subj+'_svm_acc_cope_%s.nii.gz'%(i+1)))
+    
+    #-- load estimated beta maps
+    print 'Load estimated beta maps from training datasets ...'
+    train_betas1_file=os.path.join(beta_dir,sid,'%s_beta_train_s1.nii.gz'%(sid))
+    train_betas2_file=os.path.join(beta_dir,sid,'%s_beta_train_s2.nii.gz'%(sid))
+    train_betas1 = nib.load(train_betas1_file).get_data()
+    train_betas2 = nib.load(train_betas2_file).get_data()
+    train_betas = np.concatenate((train_betas1, train_betas2), axis=3)
+    print 'Load estimated beta maps from testing datasets ...'
+    test_betas1_file = os.path.join(beta_dir, sid,'%s_beta_val_s1.nii.gz'%(sid))
+    test_betas2_file = os.path.join(beta_dir, sid,'%s_beta_val_s2.nii.gz'%(sid))
+    test_betas1 = nib.load(test_betas1_file).get_data()
+    test_betas2 = nib.load(test_betas2_file).get_data()
+    test_betas = np.concatenate((test_betas1, test_betas2), axis=3)
+    # data normalization
+    m = np.mean(train_betas, axis=3, keepdims=True)
+    s = np.std(train_betas, axis=3, keepdims=True)
+    train_betas = (train_betas - m) / (s + 1e-10)
+    m = np.mean(test_betas, axis=3, keepdims=True)
+    s = np.std(test_betas, axis=3, keepdims=True)
+    test_betas = (test_betas - m) / (s + 1e-10)
+
+    print train_betas.shape
+    print test_betas.shape
+
+    #-- get stimuli label info
+    print 'Load stimuli label info ...'
+    stim_label_list = get_stimuli_label(root_dir, sid)
+    train_label = np.concatenate((stim_label_list[0], stim_label_list[1],
+                                  stim_label_list[2], stim_label_list[3],
+                                  stim_label_list[5], stim_label_list[6],
+                                  stim_label_list[7], stim_label_list[8]))
+    test_label = np.concatenate((stim_label_list[4], stim_label_list[9]))
+
+    print train_label.shape
+    print test_label.shape
+
+    #-- svm-based searchlight
+    clf_results = np.zeros((64, 64, 33, 4))
+    # for loop for voxel-wise searchlight
+    mask_coord = niroi.get_roi_coord(mask_data)
+    ccount = 0
+    for c in mask_coord:
+        ccount += 1
+        print ccount
+        cube_roi = np.zeros((64, 64, 33))
+        cube_roi = niroi.cube_roi(cube_roi, c[0], c[1], c[2], 2, 1)
+        cube_coord = niroi.get_roi_coord(cube_roi)
+        train_x = []
+        test_x = []
+        for t in range(train_betas.shape[3]):
+            vtr = niroi.get_voxel_value(cube_coord, train_betas[..., t])
+            train_x.append(vtr.tolist())
+        for t in range(test_betas.shape[3]):
+            vtr = niroi.get_voxel_value(cube_coord, test_betas[..., t])
+            test_x.append(vtr.tolist())
+        train_x = np.array(train_x)
+        test_x = np.array(test_x)
+        # classifier
+        # kernel can be specified as linear, poly, rbf, and sigmod
+        kernel = 'linear'
+        clf = svm.SVC(kernel=kernel)
+        clf.fit(train_x, train_label)
+        pred = clf.predict(test_x)
+        for e in range(4):
+            acc = np.sum(pred[test_label==(e+1)]==(e+1))*1.0 / np.sum(test_label==(e+1))
+            print acc
+            clf_results[c[0], c[1], c[2], e] = acc
+    # save to nifti
+    aff = nib.load(mask_file).affine
+    result_file = os.path.join(work_dir, sid, 'svm_%s.nii.gz'%(kernel))
+    nibase.save2nifti(clf_results, aff, result_file)
+    func2anat_mat = os.path.join(root_dir, 'workshop', 'glmmodel', 'nii',
+                                 sid, 'ref_vol2highres.mat')
+    t1brain_vol = os.path.join(root_dir, 'nii', sid+'P1', '3danat',
+                               'reg_fsl', 'T1_brain.nii.gz')
+    if os.path.exists(func2anat_mat):
+        result2_file=os.path.join(work_dir,sid,'svm_%s_highres.nii.gz'%(kernel))
+        str_cmd = ['flirt', '-in', result_file, '-ref', t1brain_vol,
+                   '-applyxfm', '-init', func2anat_mat, '-out', result2_file]
+        os.system(' '.join(str_cmd))
 
 
 if __name__=='__main__':
@@ -223,10 +270,4 @@ if __name__=='__main__':
     # SVM-based searchlight
     svm_searchlight(root_dir, 'S1')
     #random_svm_cope_searchlight(root_dir, 'S1')
-
-    # network analysis
-    #get_emo_ts(root_dir, seq)
-    #get_conn(root_dir)
-    #get_rand_conn(root_dir, 1000)
-    #get_mvp_group_roi(root_dir)
 
