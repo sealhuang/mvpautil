@@ -147,11 +147,39 @@ def func2anat(root_dir, sid):
                '--t1brain=%s'%(t1brain_vol), '--out=%s'%(out_mat)]
     subprocess.call(' '.join(cmd_str), shell=True)
 
+def standard2func(root_dir, sid):
+    """Generate a linear registration matrix from standard space (2mm) to
+    functional image (native space).
+    """
+    # dir config
+    anat_dir = os.path.join(root_dir, 'nii', sid+'P1', '3danat', 'reg_fsl')
+    func_dir = os.path.join(root_dir, 'workshop', 'glmmodel', 'nii', sid)
+
+    # get standard to highres image matrix
+    anat2standard_mat = os.path.join(anat_dir, 'highres2standard_2mm.mat')
+    standard2anat_mat = os.path.join(anat_dir, 'standard_2mm2highres.mat')
+    cmd_str = ['convert_xfm', '-omat', standard2anat_mat,
+               '-inverse', anat2standard_mat]
+    subprocess.call(' '.join(cmd_str), shell=True)
+
+    # get highres image to func matrix
+    func2anat_mat = os.path.join(func_dir, 'ref_vol2highres.mat')
+    anat2func_mat = os.path.join(func_dir, 'highres2ref_vol.mat')
+    cmd_str = ['convert_xfm', '-omat', anat2func_mat, '-inverse', func2anat_mat]
+    subprocess.call(' '.join(cmd_str), shell=True)
+
+    # get standard to func image
+    standard2func_mat = os.path.join(func_dir, 'standard2ref_vol.mat')
+    cmd_str = ['convert_xfm', '-omat', standard2func_mat, '-concat',
+               anat2func_mat, standard2anat_mat]
+    subprocess.call(' '.join(cmd_str), shell=True)
+
 
 if __name__=='__main__':
     root_dir = r'/nfs/diskstation/projects/emotionPro'
     #slicetimer(root_dir, 'S1')
     #intra_session_mc(root_dir, 'S1', 1)
     #inter_session_mc(root_dir, 'S1', 1)
-    func2anat(root_dir, 'S1')
+    #func2anat(root_dir, 'S1')
+    standard2func(root_dir, 'S1')
 

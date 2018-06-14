@@ -74,6 +74,82 @@ def get_roi_cope_mvps(cope_list, trial_tag_list, roi_coord):
                 test_y.append(trial_tag[t])
     return np.array(train_x), np.array(train_y), np.array(test_x), np.array(test_y)
 
+def roi_svm(root_dir, sid, roi_file):
+    """ROI based SVM classifcation."""
+    #-- dir config
+    beta_dir = os.path.join(root_dir, 'workshop', 'glmmodel', 'betas')
+    work_dir = os.path.join(root_dir, 'workshop', 'glmmodel', 'roi_analysis')
+    
+    #-- read mask file
+    print 'Load mask data ...'
+    mask_file = os.path.join(work_dir, sid, roi_file)
+    mask_data = nib.load(mask_file).get_data()
+    roi_idx = np.unique(mask_data)
+    
+    #-- load estimated beta maps
+    print 'Load estimated beta maps from training datasets ...'
+    train_betas1_file=os.path.join(beta_dir,sid,'%s_beta_train_s1.nii.gz'%(sid))
+    train_betas2_file=os.path.join(beta_dir,sid,'%s_beta_train_s2.nii.gz'%(sid))
+    train_betas1 = nib.load(train_betas1_file).get_data()
+    train_betas2 = nib.load(train_betas2_file).get_data()
+    train_betas = np.concatenate((train_betas1, train_betas2), axis=3)
+    print 'Load estimated beta maps from testing datasets ...'
+    test_betas1_file = os.path.join(beta_dir, sid,'%s_beta_val_s1.nii.gz'%(sid))
+    test_betas2_file = os.path.join(beta_dir, sid,'%s_beta_val_s2.nii.gz'%(sid))
+    test_betas1 = nib.load(test_betas1_file).get_data()
+    test_betas2 = nib.load(test_betas2_file).get_data()
+    test_betas = np.concatenate((test_betas1, test_betas2), axis=3)
+    # data normalization
+    m = np.mean(train_betas, axis=3, keepdims=True)
+    s = np.std(train_betas, axis=3, keepdims=True)
+    train_betas = (train_betas - m) / (s + 1e-10)
+    m = np.mean(test_betas, axis=3, keepdims=True)
+    s = np.std(test_betas, axis=3, keepdims=True)
+    test_betas = (test_betas - m) / (s + 1e-10)
+
+    print train_betas.shape
+    print test_betas.shape
+
+    #-- get stimuli label info
+    print 'Load stimuli label info ...'
+    stim_label_list = get_stimuli_label(root_dir, sid)
+    train_label = np.concatenate((stim_label_list[0], stim_label_list[1],
+                                  stim_label_list[2], stim_label_list[3],
+                                  stim_label_list[5], stim_label_list[6],
+                                  stim_label_list[7], stim_label_list[8]))
+    test_label = np.concatenate((stim_label_list[4], stim_label_list[9]))
+
+    print train_label.shape
+    print test_label.shape
+
+    #-- svm-based classifier
+    # for loop for each roi
+    for i in roi_idx:
+        if not i:
+            continue
+        print 'ROI %s'%(i)
+        roi_mask = mask_data==i
+        roi_coord = niroi.get_roi_coord(roi_mask)
+        train_x = []
+        test_x = []
+        for t in range(train_betas.shape[3]):
+            vtr = niroi.get_voxel_value(roi_coord, train_betas[..., t])
+            train_x.append(vtr.tolist())
+        for t in range(test_betas.shape[3]):
+            vtr = niroi.get_voxel_value(roi_coord, test_betas[..., t])
+            test_x.append(vtr.tolist())
+        train_x = np.array(train_x)
+        test_x = np.array(test_x)
+        # classifier
+        # kernel can be specified as linear, poly, rbf, and sigmod
+        kernel = 'rbf'
+        clf = svm.SVC(kernel=kernel)
+        clf.fit(train_x, train_label)
+        pred = clf.predict(test_x)
+        for e in range(4):
+            acc = np.sum(pred[test_label==(e+1)]==(e+1))*1.0 / np.sum(test_label==(e+1))
+            print acc
+
 def svm_searchlight(root_dir, sid):
     """SVM based searchlight analysis."""
     #-- dir config
@@ -145,7 +221,7 @@ def svm_searchlight(root_dir, sid):
         test_x = np.array(test_x)
         # classifier
         # kernel can be specified as linear, poly, rbf, and sigmod
-        kernel = 'linear'
+        kernel = 'rbf'
         clf = svm.SVC(kernel=kernel)
         clf.fit(train_x, train_label)
         pred = clf.predict(test_x)
@@ -221,8 +297,9 @@ if __name__=='__main__':
     #gen_func_mask(root_dir, 'S1')
 
     # SVM-based searchlight
-    svm_searchlight(root_dir, 'S1')
+    #svm_searchlight(root_dir, 'S1')
     #random_svm_cope_searchlight(root_dir, 'S1')
+    roi_svm(root_dir, 'S1', 'face_roi_mprm.nii.gz')
 
     # network analysis
     #get_emo_ts(root_dir, seq)
