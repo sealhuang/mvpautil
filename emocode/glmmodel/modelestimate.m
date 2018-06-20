@@ -1,9 +1,10 @@
-function [design, data, hrfs, beta_train, beta_val, r2_train, r2_val] = modelestimate(sid, session)
+function [design, data, hrfs, beta_train, beta_val, r2_train, r2_val] = modelestimate(sid, session, test_run_idx)
 % 
 % Script for distinct image neural response estimate.
-% [design, data, hrfs, beta_train, beta_val, r2_train, r2_val] = modelestimate(sid, session)
+% [design, data, hrfs, beta_train, beta_val, r2_train, r2_val] = modelestimate(sid, session, test_run_idx)
 %     sid: subject index
 %     session: session index
+%     test_run_idx: which run is test dataset
 
 % subject names
 subj_names = {'liqing', 'zhangjipeng', 'zhangdan', 'wanghuicui', ...
@@ -15,6 +16,9 @@ nii_dir = fullfile(root_dir, 'workshop', 'glmmodel', 'nii');
 % config run list
 run_list = reshape(1:10, 5, 2);
 run_list = run_list(:, session);
+% move the test run index to the tail
+run_list = [run_list; run_list(test_run_idx)];
+run_list(test_run_idx) = [];
 % design and data cell init
 design = cell(1, length(run_list));
 data = cell(1, length(run_list));
@@ -84,6 +88,8 @@ beta_train = flip(beta_train, 1);
 r2_train = flip(r2_train, 1);
 beta_val = flip(beta_val, 1);
 r2_val = flip(r2_val, 1);
+
+save(strcat('S', num2str(sid), '_results_s', num2str(session), '_t', num2str(test_run_idx), '.mat'), 'hrfs', 'beta_train', 'beta_val', 'r2_train', 'r2_val', 'design', 'data')
 
 end
 
