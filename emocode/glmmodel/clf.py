@@ -351,12 +351,40 @@ def random_svm_searchlight(root_dir, subj):
                    '-applyxfm', '-init', func2anat_mat, '-out', result2_file]
         os.system(' '.join(str_cmd))
 
+def label2file(root_dir, sid):
+    """Get subject's trial tag for each run."""
+    beh_dir = os.path.join(root_dir, 'beh')
+    # get subject name
+    subj_name = {'S1': 'liqing', 'S2': 'zhangjipeng', 'S3': 'zhangdan',
+                 'S4': 'wanghuicui', 'S5': 'zhuzhiyuan', 'S6': 'longhailiang',
+                 'S7': 'liranran'}
+    subj = subj_name[sid]
+    # stimuli label list var
+    for i in range(10):
+        stim_label = []
+        img_list = []
+        # load experiment record
+        record = os.path.join(beh_dir, 'trial_record_%s_run%s.csv'%(subj, i+1))
+        record_info = open(record, 'r').readlines()
+        record_info.pop(0)
+        record_info = [line.strip().split(',') for line in record_info]
+        for line in record_info:
+            if not line[0] in img_list:
+                img_list.append(line[0])
+                stim_label.append(int(line[1]))
+        outfile = '%s_stimuli_%s.csv'%(sid, i+1)
+        with open(outfile, 'w') as f:
+            for j in range(len(img_list)):
+                f.write(','.join([img_list[j], str(stim_label[j])])+'\n')
+
 
 if __name__=='__main__':
     root_dir = r'/nfs/diskstation/projects/emotionPro'
 
     # generate functional mask for each subject
     #gen_func_mask(root_dir, 'S1')
+
+    #label2file(root_dir, 'S1')
 
     # SVM-based searchlight
     #svm_searchlight(root_dir, 'S1', 1)
