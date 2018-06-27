@@ -3,6 +3,7 @@
 
 import os
 import numpy as np
+import random
 import nibabel as nib
 from sklearn import svm
 
@@ -198,10 +199,6 @@ def svm_searchlight(root_dir, sid, test_run_idx):
     stim_label_list.pop(test_run_idx-1)
     stim_label_list.pop(5+test_run_idx-2)
     train_label = np.concatenate(tuple(item for item in stim_label_list))
-    #train_label = np.concatenate((stim_label_list[0], stim_label_list[1],
-    #                              stim_label_list[2], stim_label_list[3],
-    #                              stim_label_list[5], stim_label_list[6],
-    #                              stim_label_list[7], stim_label_list[8]))
 
     print train_label.shape
     print test_label.shape
@@ -258,8 +255,9 @@ def svm_searchlight_cv(root_dir, sid):
     for r in range(1, 6):
         svm_searchlight(root_dir, sid, r)
 
-def random_svm_searchlight(root_dir, subj):
-    """SVM based searchlight analysis, used to generate a random baseline."""
+def random_svm_searchlight(root_dir, sid, test_run_idx, rand_num):
+    """Generate a NULL distribution for SVM based searchlight analysis."""
+    print 'Searchlight analysis on Subject %s - test run %s'%(sid, test_run_idx)
     #-- dir config
     beta_dir = os.path.join(root_dir, 'workshop', 'glmmodel', 'betas')
     work_dir = os.path.join(root_dir, 'workshop', 'glmmodel', 'searchlight')
@@ -272,42 +270,43 @@ def random_svm_searchlight(root_dir, subj):
     
     #-- load estimated beta maps
     print 'Load estimated beta maps from training datasets ...'
-    train_betas1_file=os.path.join(beta_dir,sid,'%s_beta_train_s1.nii.gz'%(sid))
-    train_betas2_file=os.path.join(beta_dir,sid,'%s_beta_train_s2.nii.gz'%(sid))
+    train_betas1_file = os.path.join(beta_dir, sid,
+                            '%s_beta_train_s1_t%s.nii.gz'%(sid, test_run_idx))
+    train_betas2_file = os.path.join(beta_dir, sid,
+                            '%s_beta_train_s2_t%s.nii.gz'%(sid, test_run_idx))
     train_betas1 = nib.load(train_betas1_file).get_data()
     train_betas2 = nib.load(train_betas2_file).get_data()
     train_betas = np.concatenate((train_betas1, train_betas2), axis=3)
     print 'Load estimated beta maps from testing datasets ...'
-    test_betas1_file = os.path.join(beta_dir, sid,'%s_beta_val_s1.nii.gz'%(sid))
-    test_betas2_file = os.path.join(beta_dir, sid,'%s_beta_val_s2.nii.gz'%(sid))
+    test_betas1_file = os.path.join(beta_dir, sid,
+                            '%s_beta_val_s1_t%s.nii.gz'%(sid, test_run_idx))
+    test_betas2_file = os.path.join(beta_dir, sid,
+                            '%s_beta_val_s2_t%s.nii.gz'%(sid, test_run_idx))
     test_betas1 = nib.load(test_betas1_file).get_data()
     test_betas2 = nib.load(test_betas2_file).get_data()
     test_betas = np.concatenate((test_betas1, test_betas2), axis=3)
     # data normalization
     m = np.mean(train_betas, axis=3, keepdims=True)
     s = np.std(train_betas, axis=3, keepdims=True)
-    train_betas = (train_betas - m) / (s + 1e-10)
+    train_betas = (train_betas - m) / (s + 1e-5)
     m = np.mean(test_betas, axis=3, keepdims=True)
     s = np.std(test_betas, axis=3, keepdims=True)
-    test_betas = (test_betas - m) / (s + 1e-10)
-
-    print train_betas.shape
-    print test_betas.shape
+    test_betas = (test_betas - m) / (s + 1e-5)
 
     #-- get stimuli label info
     print 'Load stimuli label info ...'
     stim_label_list = get_stimuli_label(root_dir, sid)
-    train_label = np.concatenate((stim_label_list[0], stim_label_list[1],
-                                  stim_label_list[2], stim_label_list[3],
-                                  stim_label_list[5], stim_label_list[6],
-                                  stim_label_list[7], stim_label_list[8]))
-    test_label = np.concatenate((stim_label_list[4], stim_label_list[9]))
-
-    print train_label.shape
-    print test_label.shape
+    test_label = np.concatenate((stim_label_list[test_run_idx-1],
+                                 stim_label_list[5+test_run_idx-1]))
+    stim_label_list.pop(test_run_idx-1)
+    stim_label_list.pop(5+test_run_idx-2)
+    train_label = np.concatenate(tuple(item for item in stim_label_list))
 
     #-- svm-based searchlight
-    clf_results = np.zeros((64, 64, 33, 4))
+    clf_results = [np.zeros((64, 64, 33, rand_num)),
+                   np.zeros((64, 64, 33, rand_num)),
+                   np.zeros((64, 64, 33, rand_num)),
+                   np.zeros((64, 64, 33, rand_num))]
     # for loop for voxel-wise searchlight
     mask_coord = niroi.get_roi_coord(mask_data)
     ccount = 0
@@ -327,29 +326,40 @@ def random_svm_searchlight(root_dir, subj):
             test_x.append(vtr.tolist())
         train_x = np.array(train_x)
         test_x = np.array(test_x)
-        # classifier
-        # kernel can be specified as linear, poly, rbf, and sigmod
-        kernel = 'linear'
-        clf = svm.SVC(kernel=kernel)
-        clf.fit(train_x, train_label)
-        pred = clf.predict(test_x)
-        for e in range(4):
-            acc = np.sum(pred[test_label==(e+1)]==(e+1))*1.0 / np.sum(test_label==(e+1))
-            print acc
-            clf_results[c[0], c[1], c[2], e] = acc
+        # randomize labels
+        for randn in range(rand_num):
+            shuffle_idx = range(train_label.shape[0])
+            random.Random(randn).shuffle(shuffle_idx)
+            rtrain_label = train_label[shuffle_idx]
+            shuffle_idx = range(test_label.shape[0])
+            random.Random(randn).shuffle(shuffle_idx)
+            rtest_label = test_label[shuffle_idx]
+            # classifier
+            # kernel can be specified as linear, poly, rbf, and sigmod
+            kernel = 'rbf'
+            clf = svm.SVC(kernel=kernel)
+            clf.fit(train_x, rtrain_label)
+            pred = clf.predict(test_x)
+            for e in range(4):
+                acc = np.sum(pred[rtest_label==(e+1)]==(e+1))*1.0/np.sum(rtest_label==(e+1))
+                clf_results[e][c[0], c[1], c[2], randn] = acc
+    
     # save to nifti
-    aff = nib.load(mask_file).affine
-    result_file = os.path.join(work_dir, sid, 'svm_%s.nii.gz'%(kernel))
-    nibase.save2nifti(clf_results, aff, result_file)
-    func2anat_mat = os.path.join(root_dir, 'workshop', 'glmmodel', 'nii',
-                                 sid, 'ref_vol2highres.mat')
-    t1brain_vol = os.path.join(root_dir, 'nii', sid+'P1', '3danat',
-                               'reg_fsl', 'T1_brain.nii.gz')
-    if os.path.exists(func2anat_mat):
-        result2_file=os.path.join(work_dir,sid,'svm_%s_highres.nii.gz'%(kernel))
-        str_cmd = ['flirt', '-in', result_file, '-ref', t1brain_vol,
-                   '-applyxfm', '-init', func2anat_mat, '-out', result2_file]
-        os.system(' '.join(str_cmd))
+    for e in range(4):
+        aff = nib.load(mask_file).affine
+        result_file = os.path.join(work_dir, sid,
+                            'rand_svm_t%s_e%s.nii.gz'%(test_run_idx, e+1))
+        nibase.save2nifti(clf_results[e], aff, result_file)
+        func2anat_mat = os.path.join(root_dir, 'workshop', 'glmmodel', 'nii',
+                                     sid, 'ref_vol2highres.mat')
+        t1brain_vol = os.path.join(root_dir, 'nii', sid+'P1', '3danat',
+                                   'reg_fsl', 'T1_brain.nii.gz')
+        if os.path.exists(func2anat_mat):
+            result2_file = os.path.join(work_dir, sid,
+                        'rand_svm_t%s_e%s_highres.nii.gz'%(test_run_idx, e+1))
+            str_cmd = ['flirt', '-in', result_file, '-ref', t1brain_vol,
+                       '-applyxfm', '-init', func2anat_mat, '-out',result2_file]
+            os.system(' '.join(str_cmd))
 
 def label2file(root_dir, sid):
     """Get subject's trial tag for each run."""
@@ -388,7 +398,7 @@ if __name__=='__main__':
 
     # SVM-based searchlight
     #svm_searchlight(root_dir, 'S1', 1)
-    svm_searchlight_cv(root_dir, 'S1')
-    #random_svm_cope_searchlight(root_dir, 'S1')
+    #svm_searchlight_cv(root_dir, 'S1')
+    random_svm_searchlight(root_dir, 'S1', 1, 1000)
     #roi_svm(root_dir, 'S1', 'face_roi_mprm.nii.gz')
 
