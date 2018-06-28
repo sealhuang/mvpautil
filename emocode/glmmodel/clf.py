@@ -6,6 +6,7 @@ import numpy as np
 import random
 import nibabel as nib
 from sklearn import svm
+from multiprocessing import Array, Pool
 
 from nitools import roi as niroi
 from nitools import base as nibase
@@ -255,6 +256,42 @@ def svm_searchlight_cv(root_dir, sid):
     for r in range(1, 6):
         svm_searchlight(root_dir, sid, r)
 
+def initpool(clf_result_e1, clf_result_e2, clf_result_e3, clf_result_e4):
+    """Initializer for process pool."""
+    global clf_e1
+    global clf_e2
+    global clf_e3
+    global clf_e4
+    clf_e1 = clf_result_e1
+    clf_e2 = clf_result_e2
+    clf_e3 = clf_result_e3
+    clf_e4 = clf_result_e4
+
+def randfunc(rand_iter, train_label, test_label, train_x, test_x, vxl_loc):
+    """Sugar for randomization."""
+    # randomize labels
+    shuffle_idx = range(train_label.shape[0])
+    random.Random(rand_iter).shuffle(shuffle_idx)
+    rtrain_label = train_label[shuffle_idx]
+    shuffle_idx = range(test_label.shape[0])
+    random.Random(rand_iter).shuffle(shuffle_idx)
+    rtest_label = test_label[shuffle_idx]
+    # classifier
+    # kernel can be specified as linear, poly, rbf, and sigmod
+    kernel = 'rbf'
+    clf = svm.SVC(kernel=kernel)
+    clf.fit(train_x, rtrain_label)
+    pred = clf.predict(test_x)
+    # store result
+    acc = np.sum(pred[rtest_label==1]==1)*1.0/np.sum(rtest_label==1)
+    clf_e1[vxl_loc+rand_iter] = acc
+    acc = np.sum(pred[rtest_label==2]==2)*1.0/np.sum(rtest_label==2)
+    clf_e2[vxl_loc+rand_iter] = acc
+    acc = np.sum(pred[rtest_label==3]==3)*1.0/np.sum(rtest_label==3)
+    clf_e3[vxl_loc+rand_iter] = acc
+    acc = np.sum(pred[rtest_label==4]==4)*1.0/np.sum(rtest_label==4)
+    clf_e4[vxl_loc+rand_iter] = acc
+
 def random_svm_searchlight(root_dir, sid, test_run_idx, rand_num):
     """Generate a NULL distribution for SVM based searchlight analysis."""
     print 'Searchlight analysis on Subject %s - test run %s'%(sid, test_run_idx)
@@ -303,10 +340,14 @@ def random_svm_searchlight(root_dir, sid, test_run_idx, rand_num):
     train_label = np.concatenate(tuple(item for item in stim_label_list))
 
     #-- svm-based searchlight
-    clf_results = [np.zeros((64, 64, 33, rand_num)),
-                   np.zeros((64, 64, 33, rand_num)),
-                   np.zeros((64, 64, 33, rand_num)),
-                   np.zeros((64, 64, 33, rand_num))]
+    clf_result_e1 = Array('d', np.zeros((64, 64, 33, rand_num)).flat)
+    clf_result_e2 = Array('d', np.zeros((64, 64, 33, rand_num)).flat)
+    clf_result_e3 = Array('d', np.zeros((64, 64, 33, rand_num)).flat)
+    clf_result_e4 = Array('d', np.zeros((64, 64, 33, rand_num)).flat)
+    #clf_results = [np.zeros((64, 64, 33, rand_num)),
+    #               np.zeros((64, 64, 33, rand_num)),
+    #               np.zeros((64, 64, 33, rand_num)),
+    #               np.zeros((64, 64, 33, rand_num))]
     # for loop for voxel-wise searchlight
     mask_coord = niroi.get_roi_coord(mask_data)
     ccount = 0
@@ -326,24 +367,46 @@ def random_svm_searchlight(root_dir, sid, test_run_idx, rand_num):
             test_x.append(vtr.tolist())
         train_x = np.array(train_x)
         test_x = np.array(test_x)
-        # randomize labels
-        for randn in range(rand_num):
-            shuffle_idx = range(train_label.shape[0])
-            random.Random(randn).shuffle(shuffle_idx)
-            rtrain_label = train_label[shuffle_idx]
-            shuffle_idx = range(test_label.shape[0])
-            random.Random(randn).shuffle(shuffle_idx)
-            rtest_label = test_label[shuffle_idx]
-            # classifier
-            # kernel can be specified as linear, poly, rbf, and sigmod
-            kernel = 'rbf'
-            clf = svm.SVC(kernel=kernel)
-            clf.fit(train_x, rtrain_label)
-            pred = clf.predict(test_x)
-            for e in range(4):
-                acc = np.sum(pred[rtest_label==(e+1)]==(e+1))*1.0/np.sum(rtest_label==(e+1))
-                clf_results[e][c[0], c[1], c[2], randn] = acc
+        # randomize
+        # setting up pool
+        vxl_loc = c[0]*64*33*rand_num + c[1]*33*rand_num + c[2]*rand_num
+        pool = Pool(initializer=initpool, initargs=(clf_result_e1,
+                                                    clf_result_e2,
+                                                    clf_result_e3,
+                                                    clf_result_e4),
+                    processes=20)
+        p = [pool.apply_async(randfunc, args=(randn, train_label, test_label,
+                                              train_x, test_x, vxl_loc))
+                              for randn in xrange(0, rand_num)]
+        pool.close()
+        pool.join()
+        #for rand in xrange(rand_num):
+        #    # randomize labels
+        #    shuffle_idx = range(train_label.shape[0])
+        #    random.Random(randn).shuffle(shuffle_idx)
+        #    rtrain_label = train_label[shuffle_idx]
+        #    shuffle_idx = range(test_label.shape[0])
+        #    random.Random(randn).shuffle(shuffle_idx)
+        #    rtest_label = test_label[shuffle_idx]
+        #    # classifier
+        #    # kernel can be specified as linear, poly, rbf, and sigmod
+        #    kernel = 'rbf'
+        #    clf = svm.SVC(kernel=kernel)
+        #    clf.fit(train_x, rtrain_label)
+        #    pred = clf.predict(test_x)
+        #    for e in range(4):
+        #        acc = np.sum(pred[rtest_label==(e+1)]==(e+1))*1.0/np.sum(rtest_label==(e+1))
+        #        clf_results[e][c[0], c[1], c[2], randn] = acc
     
+    clf_results = [np.reshape(np.frombuffer(clf_result_e1.get_obj()),
+                              (64, 64, 33, rand_num)),
+                   np.reshape(np.frombuffer(clf_result_e2.get_obj()),
+                              (64, 64, 33, rand_num)),
+                   np.reshape(np.frombuffer(clf_result_e3.get_obj()),
+                              (64, 64, 33, rand_num)),
+                   np.reshape(np.frombuffer(clf_result_e4.get_obj()),
+                              (64, 64, 33, rand_num))]
+
     # save to nifti
     for e in range(4):
         aff = nib.load(mask_file).affine
@@ -399,6 +462,6 @@ if __name__=='__main__':
     # SVM-based searchlight
     #svm_searchlight(root_dir, 'S1', 1)
     #svm_searchlight_cv(root_dir, 'S1')
-    random_svm_searchlight(root_dir, 'S1', 1, 1000)
+    random_svm_searchlight(root_dir, 'S1', 1, 3)
     #roi_svm(root_dir, 'S1', 'face_roi_mprm.nii.gz')
 
