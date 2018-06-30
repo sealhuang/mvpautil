@@ -284,7 +284,7 @@ def randfunc(x, y,z,rand_num, train_betas, test_betas, train_label, test_label):
     test_x = np.array(test_x)
     # get voxel index
     vxl_loc = x*64*33*rand_num + y*33*rand_num + z*rand_num
-    print vxl_loc
+    print x, y, z
     # for loop for randomize
     for randn in xrange(0, rand_num):
         # randomize labels
