@@ -267,30 +267,48 @@ def initpool(clf_result_e1, clf_result_e2, clf_result_e3, clf_result_e4):
     clf_e3 = clf_result_e3
     clf_e4 = clf_result_e4
 
-def randfunc(rand_iter, train_label, test_label, train_x, test_x, vxl_loc):
+def randfunc(x, y,z,rand_num, train_betas, test_betas, train_label, test_label):
     """Sugar for randomization."""
-    # randomize labels
-    shuffle_idx = range(train_label.shape[0])
-    random.Random(rand_iter).shuffle(shuffle_idx)
-    rtrain_label = train_label[shuffle_idx]
-    shuffle_idx = range(test_label.shape[0])
-    random.Random(rand_iter).shuffle(shuffle_idx)
-    rtest_label = test_label[shuffle_idx]
-    # classifier
-    # kernel can be specified as linear, poly, rbf, and sigmod
-    kernel = 'rbf'
-    clf = svm.SVC(kernel=kernel)
-    clf.fit(train_x, rtrain_label)
-    pred = clf.predict(test_x)
-    # store result
-    acc = np.sum(pred[rtest_label==1]==1)*1.0/np.sum(rtest_label==1)
-    clf_e1[vxl_loc+rand_iter] = acc
-    acc = np.sum(pred[rtest_label==2]==2)*1.0/np.sum(rtest_label==2)
-    clf_e2[vxl_loc+rand_iter] = acc
-    acc = np.sum(pred[rtest_label==3]==3)*1.0/np.sum(rtest_label==3)
-    clf_e3[vxl_loc+rand_iter] = acc
-    acc = np.sum(pred[rtest_label==4]==4)*1.0/np.sum(rtest_label==4)
-    clf_e4[vxl_loc+rand_iter] = acc
+    cube_roi = np.zeros((64, 64, 33))
+    cube_roi = niroi.cube_roi(cube_roi, x, y, z, 2, 1)
+    cube_coord = niroi.get_roi_coord(cube_roi)
+    train_x = []
+    test_x = []
+    for t in range(train_betas.shape[3]):
+        vtr = niroi.get_voxel_value(cube_coord, train_betas[..., t])
+        train_x.append(vtr.tolist())
+    for t in range(test_betas.shape[3]):
+        vtr = niroi.get_voxel_value(cube_coord, test_betas[..., t])
+        test_x.append(vtr.tolist())
+    train_x = np.array(train_x)
+    test_x = np.array(test_x)
+    # get voxel index
+    vxl_loc = x*64*33*rand_num + y*33*rand_num + z*rand_num
+    print vxl_loc
+    # for loop for randomize
+    for randn in xrange(0, rand_num):
+        # randomize labels
+        shuffle_idx = range(train_label.shape[0])
+        random.Random(randn).shuffle(shuffle_idx)
+        rtrain_label = train_label[shuffle_idx]
+        shuffle_idx = range(test_label.shape[0])
+        random.Random(randn).shuffle(shuffle_idx)
+        rtest_label = test_label[shuffle_idx]
+        # classifier
+        # kernel can be specified as linear, poly, rbf, and sigmod
+        kernel = 'rbf'
+        clf = svm.SVC(kernel=kernel)
+        clf.fit(train_x, rtrain_label)
+        pred = clf.predict(test_x)
+        # store result
+        acc = np.sum(pred[rtest_label==1]==1)*1.0/np.sum(rtest_label==1)
+        clf_e1[vxl_loc+randn] = acc
+        acc = np.sum(pred[rtest_label==2]==2)*1.0/np.sum(rtest_label==2)
+        clf_e2[vxl_loc+randn] = acc
+        acc = np.sum(pred[rtest_label==3]==3)*1.0/np.sum(rtest_label==3)
+        clf_e3[vxl_loc+randn] = acc
+        acc = np.sum(pred[rtest_label==4]==4)*1.0/np.sum(rtest_label==4)
+        clf_e4[vxl_loc+randn] = acc
 
 def random_svm_searchlight(root_dir, sid, test_run_idx, rand_num):
     """Generate a NULL distribution for SVM based searchlight analysis."""
@@ -344,42 +362,50 @@ def random_svm_searchlight(root_dir, sid, test_run_idx, rand_num):
     clf_result_e2 = Array('d', np.zeros((64, 64, 33, rand_num)).flat)
     clf_result_e3 = Array('d', np.zeros((64, 64, 33, rand_num)).flat)
     clf_result_e4 = Array('d', np.zeros((64, 64, 33, rand_num)).flat)
-    #clf_results = [np.zeros((64, 64, 33, rand_num)),
-    #               np.zeros((64, 64, 33, rand_num)),
-    #               np.zeros((64, 64, 33, rand_num)),
-    #               np.zeros((64, 64, 33, rand_num))]
-    # for loop for voxel-wise searchlight
+    # get mask
     mask_coord = niroi.get_roi_coord(mask_data)
-    ccount = 0
-    for c in mask_coord:
-        ccount += 1
-        print ccount
-        cube_roi = np.zeros((64, 64, 33))
-        cube_roi = niroi.cube_roi(cube_roi, c[0], c[1], c[2], 2, 1)
-        cube_coord = niroi.get_roi_coord(cube_roi)
-        train_x = []
-        test_x = []
-        for t in range(train_betas.shape[3]):
-            vtr = niroi.get_voxel_value(cube_coord, train_betas[..., t])
-            train_x.append(vtr.tolist())
-        for t in range(test_betas.shape[3]):
-            vtr = niroi.get_voxel_value(cube_coord, test_betas[..., t])
-            test_x.append(vtr.tolist())
-        train_x = np.array(train_x)
-        test_x = np.array(test_x)
-        # randomize
-        # setting up pool
-        vxl_loc = c[0]*64*33*rand_num + c[1]*33*rand_num + c[2]*rand_num
-        pool = Pool(initializer=initpool, initargs=(clf_result_e1,
-                                                    clf_result_e2,
-                                                    clf_result_e3,
-                                                    clf_result_e4),
-                    processes=20)
-        p = [pool.apply_async(randfunc, args=(randn, train_label, test_label,
-                                              train_x, test_x, vxl_loc))
-                              for randn in xrange(0, rand_num)]
-        pool.close()
-        pool.join()
+    # randomize
+    # setting up pool
+    pool = Pool(initializer=initpool, initargs=(clf_result_e1, clf_result_e2,
+                                                clf_result_e3, clf_result_e4),
+                processes=20)
+    p = [pool.apply_async(randfunc, args=(c[0], c[1], c[2], rand_num,
+                                          train_betas, test_betas,
+                                          train_label, test_label))
+                          for c in mask_coord]
+    pool.close()
+    pool.join()
+ 
+    #ccount = 0
+    #for c in mask_coord:
+    #    ccount += 1
+    #    print ccount
+    #    cube_roi = np.zeros((64, 64, 33))
+    #    cube_roi = niroi.cube_roi(cube_roi, c[0], c[1], c[2], 2, 1)
+    #    cube_coord = niroi.get_roi_coord(cube_roi)
+    #    train_x = []
+    #    test_x = []
+    #    for t in range(train_betas.shape[3]):
+    #        vtr = niroi.get_voxel_value(cube_coord, train_betas[..., t])
+    #        train_x.append(vtr.tolist())
+    #    for t in range(test_betas.shape[3]):
+    #        vtr = niroi.get_voxel_value(cube_coord, test_betas[..., t])
+    #        test_x.append(vtr.tolist())
+    #    train_x = np.array(train_x)
+    #    test_x = np.array(test_x)
+    #    # randomize
+    #    # setting up pool
+    #    vxl_loc = c[0]*64*33*rand_num + c[1]*33*rand_num + c[2]*rand_num
+    #    pool = Pool(initializer=initpool, initargs=(clf_result_e1,
+    #                                                clf_result_e2,
+    #                                                clf_result_e3,
+    #                                                clf_result_e4),
+    #                processes=20)
+    #    p = [pool.apply_async(randfunc, args=(randn, train_label, test_label,
+    #                                          train_x, test_x, vxl_loc))
+    #                          for randn in xrange(0, rand_num)]
+    #    pool.close()
+    #    pool.join()
         #for rand in xrange(rand_num):
         #    # randomize labels
         #    shuffle_idx = range(train_label.shape[0])
@@ -462,6 +488,6 @@ if __name__=='__main__':
     # SVM-based searchlight
     #svm_searchlight(root_dir, 'S1', 1)
     #svm_searchlight_cv(root_dir, 'S1')
-    random_svm_searchlight(root_dir, 'S1', 1, 3)
+    random_svm_searchlight(root_dir, 'S1', 1, 10)
     #roi_svm(root_dir, 'S1', 'face_roi_mprm.nii.gz')
 
