@@ -450,7 +450,7 @@ def random_svm_searchlight(root_dir, sid, test_run_idx, rand_num):
                        '-applyxfm', '-init', func2anat_mat, '-out',result2_file]
             os.system(' '.join(str_cmd))
 
-def label2file(root_dir, sid):
+def stimseq2file(root_dir, sid):
     """Get subject's trial tag for each run."""
     beh_dir = os.path.join(root_dir, 'beh')
     # get subject name
@@ -483,11 +483,11 @@ if __name__=='__main__':
     # generate functional mask for each subject
     #gen_func_mask(root_dir, 'S1')
 
-    #label2file(root_dir, 'S1')
+    stimseq22file(root_dir, 'S1')
 
     # SVM-based searchlight
     #svm_searchlight(root_dir, 'S1', 1)
     #svm_searchlight_cv(root_dir, 'S1')
-    random_svm_searchlight(root_dir, 'S1', 1, 10)
+    #random_svm_searchlight(root_dir, 'S1', 1000, 10)
     #roi_svm(root_dir, 'S1', 'face_roi_mprm.nii.gz')
 
