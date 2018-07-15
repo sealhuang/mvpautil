@@ -476,6 +476,80 @@ def stimseq2file(root_dir, sid):
             for j in range(len(img_list)):
                 f.write(' '.join([img_list[j], str(stim_label[j])])+'\n')
 
+def get_searchlight_p(root_dir, sid):
+    """Get p value in SVM based searchlight analysis."""
+    work_dir = os.path.join(root_dir, 'workshop', 'glmmodel', 'searchlight')
+    subj_dir = os.path.join(work_dir, sid)
+
+    print 'Calculate mean classification accuracy across CVs ...'
+    # get cv results
+    cv_files = [os.path.join(subj_dir, 'svm_rbf_t%s.nii.gz'%(i+1))
+                for i in range(5)]
+    cv_hr_files = [os.path.join(subj_dir, 'svm_rbf_t%s_highres.nii.gz'%(i+1))
+                   for i in range(5)]
+    cv_mean_file = os.path.join(subj_dir, 'svm_rbf_tmean.nii.gz')
+    cv_hr_mean_file = os.path.join(subj_dir, 'svm_rbf_tmean_highres.nii.gz')
+    # calculate mean accuracy
+    cmd_str = ' '.join(['fslmaths'] + [' -add '.join(cv_files)] + \
+                       ['-div', '5', cv_mean_file])
+    os.system(cmd_str)
+    cmd_str = ' '.join(['fslmaths'] + [' -add '.join(cv_hr_files)] + \
+                       ['-div', '5', cv_hr_mean_file])
+    os.system(cmd_str)
+
+    print 'Calculate mean classification accuracy across radnom CVs ...'
+    # calculate mean accuracy for each emotion condition
+    for e in range(4):
+        cv_files = [os.path.join(subj_dir, 'rand_svm_t%s_e%s.nii.gz'%(i+1, e+1))
+                    for i in range(5)]
+        cv_mean_file = os.path.join(subj_dir, 'rand_svm_tmean_e%s.nii.gz'%(e+1))
+        # calculate mean accuracy
+        cmd_str = ' '.join(['fslmaths'] + [' -add '.join(cv_files)] + \
+                           ['-div', '5', cv_mean_file])
+        os.system(cmd_str)
+
+    print 'Calculate p value for classification for each emotion condition ...'
+    # read mask file
+    print 'Load mask data ...'
+    mask_file = os.path.join(work_dir, sid, 'func_mask.nii.gz')
+    mask_data = nib.load(mask_file).get_data()
+    mask_data = mask_data>0
+    
+    # load mean classification accuracy
+    print 'Load mean classification accuracy data ...'
+    mean_acc_img = np.load(cv_mean_file)
+    mean_acc = mean_acc_img.get_data()
+    p_val = np.ones_like(mean_acc)
+    for e in range(4):
+        print 'Emotion %s'%(e+1)
+        rand_acc_file = os.path.join(subj_dir,'rand_svm_tmean_e%s.nii.gz'%(e+1))
+        rand_acc = nib.load(rand_acc_file).get_data()
+        # for loop for voxel-wise analysis
+        mask_coord = niroi.get_roi_coord(mask_data)
+        ccount = 0
+        for c in mask_coord:
+            ccount += 1
+            print ccount
+            rand_a = rand_acc[c[0], c[1], c[2]].copy()
+            a = mean_acc[c[0], c[1], c[2], e]
+            
+
+    ## save to nifti
+    #aff = nib.load(mask_file).affine
+    #result_file = os.path.join(work_dir, sid, 'svm_%s_t%s.nii.gz'%(kernel,
+    #                                                            test_run_idx))
+    #nibase.save2nifti(clf_results, aff, result_file)
+    #func2anat_mat = os.path.join(root_dir, 'workshop', 'glmmodel', 'nii',
+    #                             sid, 'ref_vol2highres.mat')
+    #t1brain_vol = os.path.join(root_dir, 'nii', sid+'P1', '3danat',
+    #                           'reg_fsl', 'T1_brain.nii.gz')
+    #if os.path.exists(func2anat_mat):
+    #    result2_file = os.path.join(work_dir, sid,
+    #                        'svm_%s_t%s_highres.nii.gz'%(kernel, test_run_idx))
+    #    str_cmd = ['flirt', '-in', result_file, '-ref', t1brain_vol,
+    #               '-applyxfm', '-init', func2anat_mat, '-out', result2_file]
+    #    os.system(' '.join(str_cmd))
+
 
 if __name__=='__main__':
     root_dir = r'/nfs/diskstation/projects/emotionPro'
@@ -483,11 +557,13 @@ if __name__=='__main__':
     # generate functional mask for each subject
     #gen_func_mask(root_dir, 'S1')
 
-    stimseq2file(root_dir, 'S1')
+    #stimseq2file(root_dir, 'S1')
 
     # SVM-based searchlight
     #svm_searchlight(root_dir, 'S1', 1)
     #svm_searchlight_cv(root_dir, 'S1')
     #random_svm_searchlight(root_dir, 'S1', 1000, 10)
+    get_searchlight_p(root_dir, 'S1')
+
     #roi_svm(root_dir, 'S1', 'face_roi_mprm.nii.gz')
 
