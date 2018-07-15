@@ -471,10 +471,10 @@ def stimseq2file(root_dir, sid):
             if not line[0] in img_list:
                 img_list.append(line[0])
                 stim_label.append(int(line[1]))
-        outfile = '%s_stimuli_%s.csv'%(sid, i+1)
+        outfile = '%s_stimuli_%s.txt'%(sid, i+1)
         with open(outfile, 'w') as f:
             for j in range(len(img_list)):
-                f.write(','.join([img_list[j], str(stim_label[j])])+'\n')
+                f.write(' '.join([img_list[j], str(stim_label[j])])+'\n')
 
 
 if __name__=='__main__':
