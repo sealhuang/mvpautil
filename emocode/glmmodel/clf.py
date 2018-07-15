@@ -483,7 +483,7 @@ if __name__=='__main__':
     # generate functional mask for each subject
     #gen_func_mask(root_dir, 'S1')
 
-    stimseq22file(root_dir, 'S1')
+    stimseq2file(root_dir, 'S1')
 
     # SVM-based searchlight
     #svm_searchlight(root_dir, 'S1', 1)
