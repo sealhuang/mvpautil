@@ -522,6 +522,7 @@ def get_searchlight_p(root_dir, sid):
     p_val = np.ones_like(mean_acc)
     for e in range(4):
         print 'Emotion %s'%(e+1)
+        # p-value init
         rand_acc_file = os.path.join(subj_dir,'rand_svm_tmean_e%s.nii.gz'%(e+1))
         rand_acc = nib.load(rand_acc_file).get_data()
         # for loop for voxel-wise analysis
@@ -531,24 +532,23 @@ def get_searchlight_p(root_dir, sid):
             ccount += 1
             print ccount
             rand_a = rand_acc[c[0], c[1], c[2]].copy()
+            rand_a.sort()
             a = mean_acc[c[0], c[1], c[2], e]
-            
+            p_val[c[0], c[1], c[2], e] = np.sum(rand_a>a)*1.0/1000
 
-    ## save to nifti
-    #aff = nib.load(mask_file).affine
-    #result_file = os.path.join(work_dir, sid, 'svm_%s_t%s.nii.gz'%(kernel,
-    #                                                            test_run_idx))
-    #nibase.save2nifti(clf_results, aff, result_file)
-    #func2anat_mat = os.path.join(root_dir, 'workshop', 'glmmodel', 'nii',
-    #                             sid, 'ref_vol2highres.mat')
-    #t1brain_vol = os.path.join(root_dir, 'nii', sid+'P1', '3danat',
-    #                           'reg_fsl', 'T1_brain.nii.gz')
-    #if os.path.exists(func2anat_mat):
-    #    result2_file = os.path.join(work_dir, sid,
-    #                        'svm_%s_t%s_highres.nii.gz'%(kernel, test_run_idx))
-    #    str_cmd = ['flirt', '-in', result_file, '-ref', t1brain_vol,
-    #               '-applyxfm', '-init', func2anat_mat, '-out', result2_file]
-    #    os.system(' '.join(str_cmd))
+    # save to nifti
+    aff = nib.load(mask_file).affine
+    p_file = os.path.join(subj_dir, 'svm_rbf_tmean_p.nii.gz')
+    nibase.save2nifti(p_val, aff, p_file)
+    func2anat_mat = os.path.join(root_dir, 'workshop', 'glmmodel', 'nii',
+                                 sid, 'ref_vol2highres.mat')
+    t1brain_vol = os.path.join(root_dir, 'nii', sid+'P1', '3danat',
+                               'reg_fsl', 'T1_brain.nii.gz')
+    if os.path.exists(func2anat_mat):
+        p_hr_file = os.path.join(subj_dir, 'svm_rbf_tmean_p_highres.nii.gz')
+        str_cmd = ['flirt', '-in', p_file, '-ref', t1brain_vol,
+                   '-applyxfm', '-init', func2anat_mat, '-out', p_hr_file]
+        os.system(' '.join(str_cmd))
 
 
 if __name__=='__main__':
