@@ -517,7 +517,7 @@ def get_searchlight_p(root_dir, sid):
     
     # load mean classification accuracy
     print 'Load mean classification accuracy data ...'
-    mean_acc_img = np.load(cv_mean_file)
+    mean_acc_img = nib.load(os.path.join(subj_dir, 'svm_rbf_tmean.nii.gz'))
     mean_acc = mean_acc_img.get_data()
     p_val = np.ones_like(mean_acc)
     for e in range(4):
@@ -548,6 +548,11 @@ def get_searchlight_p(root_dir, sid):
         p_hr_file = os.path.join(subj_dir, 'svm_rbf_tmean_p_highres.nii.gz')
         str_cmd = ['flirt', '-in', p_file, '-ref', t1brain_vol,
                    '-applyxfm', '-init', func2anat_mat, '-out', p_hr_file]
+        os.system(' '.join(str_cmd))
+        # get inverse p map
+        ip_hr_file = os.path.join(subj_dir, 'svm_rbf_tmean_invp_highres.nii.gz')
+        str_cmd = ['fslmaths', p_hr_file, '-mul', '-1', '-add', '1',
+                   ip_hr_file]
         os.system(' '.join(str_cmd))
 
 
