@@ -23,8 +23,7 @@ def act_fmri_corr(betas, roi_mask, acts):
                 for b in range(6):
                     pos_rsp = acts[:, a, b, j]
                     r = np.corrcoef(vxl_rsp, pos_rsp)[0, 1]
-                    if r:
-                        print r
+                    if not np.isnan(r):
                         corr_mat[a, b, j] = r
         corr_mat = corr_mat.sum(axis=2)
         plt.imshow(corr_mat, interpolation=None)
