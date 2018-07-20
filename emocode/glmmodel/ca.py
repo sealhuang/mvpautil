@@ -17,7 +17,7 @@ def act_fmri_corr(betas, roi_mask, acts):
     for i in range(x.shape[0]):
         print 'Voxel %s ...'%(i+1)
         vxl_rsp = betas[x[i], y[i], z[i]]
-        corr_mat = np.zeors((6, 6, 256))
+        corr_mat = np.zeros((6, 6, 256))
         for j in range(acts.shape[3]):
             for a in range(6):
                 for b in range(6):
