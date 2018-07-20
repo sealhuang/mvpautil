@@ -24,8 +24,9 @@ def act_fmri_corr(betas, roi_mask, acts):
                     pos_rsp = acts[:, a, b, j]
                     r = np.corrcoef(vxl_rsp, pos_rsp)[0, 1]
                     if r:
+                        print r
                         corr_mat[a, b, j] = r
-        corr_mat = corr_mat.mean(axis=2)
+        corr_mat = corr_mat.sum(axis=2)
         plt.imshow(corr_mat, interpolation=None)
         plt.colorbar()
         plt.savefig('voxel%s.png'%(i+1))
