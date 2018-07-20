@@ -17,17 +17,30 @@ def act_fmri_corr(betas, roi_mask, acts):
     for i in range(x.shape[0]):
         print 'Voxel %s ...'%(i+1)
         vxl_rsp = betas[x[i], y[i], z[i]]
-        corr_mat = np.zeros((6, 6, 256))
+        #corr_mat = np.zeros((6, 6, 256))
+        corr_mat = np.zeros((256,))
         for j in range(acts.shape[3]):
-            for a in range(6):
-                for b in range(6):
-                    pos_rsp = acts[:, a, b, j]
-                    r = np.corrcoef(vxl_rsp, pos_rsp)[0, 1]
-                    if not np.isnan(r):
-                        corr_mat[a, b, j] = r
-        corr_mat = corr_mat.sum(axis=2)
-        plt.imshow(corr_mat, interpolation=None)
-        plt.colorbar()
+            tmp_act = acts[..., j]
+            tmp_act = tmp_act.reshape((800, 36)).sum(axis=1)
+            r = np.corrcoef(vxl_rsp, tmp_act)[0, 1]
+            if not np.isnan(r):
+                corr_mat[j] = r
+            #for a in range(6):
+            #    for b in range(6):
+            #        pos_rsp = acts[:, a, b, j]
+            #        r = np.corrcoef(vxl_rsp, pos_rsp)[0, 1]
+            #        if not np.isnan(r):
+            #            corr_mat[a, b, j] = r
+        #tmp = np.zeros((6, 6))
+        #for a in range(6):
+        #    for b in range(6):
+        #        r = corr_mat[a, b]
+        #        tmp[a, b] = np.median(r)
+        #plt.imshow(tmp, interpolation=None)
+        #corr_mat = corr_mat.max(axis=2)
+        #plt.imshow(corr_mat, interpolation=None)
+        #plt.colorbar()
+        plt.bar(range(1, 257), corr_mat)
         plt.savefig('voxel%s.png'%(i+1))
         plt.close()
 
