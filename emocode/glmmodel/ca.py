@@ -28,7 +28,7 @@ def act_fmri_corr(betas, roi_mask, acts):
         corr_mat = corr_mat.mean(axis=2)
         plt.imshow(corr_mat, interpolation=None)
         plt.colorbar()
-        plt.savefig('voxel%s.png'%(i+1)
+        plt.savefig('voxel%s.png'%(i+1))
         plt.close()
 
 
