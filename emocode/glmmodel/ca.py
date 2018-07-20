@@ -17,16 +17,19 @@ def act_fmri_corr(betas, roi_mask, acts):
     for i in range(x.shape[0]):
         print 'Voxel %s ...'%(i+1)
         vxl_rsp = betas[x[i], y[i], z[i]]
+        corr_mat = np.zeors((6, 6, 256))
         for j in range(acts.shape[3]):
-            corr_mat = np.zeors((6, 6))
             for a in range(6):
                 for b in range(6):
                     pos_rsp = acts[:, a, b, j]
-                    corr_mat[a, b] = np.corrcoef(vxl_rsp, pos_rsp)[0, 1]
-            plt.imshow(corr_mat, interpolation='nearest')
-            plt.colorbar()
-            plt.savefig('v%s_c%s.png'%(i+1, j+1))
-            plt.close()
+                    r = np.corrcoef(vxl_rsp, pos_rsp)[0, 1]
+                    if r:
+                        corr_mat[a, b, j] = r
+        corr_mat = corr_mat.mean(axis=2)
+        plt.imshow(corr_mat, interpolation=None)
+        plt.colorbar()
+        plt.savefig('voxel%s.png'%(i+1)
+        plt.close()
 
 
 if __name__=='__main__':
