@@ -16,7 +16,7 @@ def save2mat(betas, roi_mask, acts):
     # get fmri data
     x, y, z = np.nonzero(roi_mask)
     print '%s voxels in the mask'%(x.shape[0])
-    voxel_rsps = np.zeros((betas.shape[3], x.shape[0]))
+    vxl_rsps = np.zeros((betas.shape[3], x.shape[0]))
     for i in range(x.shape[0]):
         vxl_rsps[:, i] = betas[x[i], y[i], z[i]]
     # get cnn data
