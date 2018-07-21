@@ -10,6 +10,22 @@ from nitools import roi as niroi
 from nitools import base as nibase
 
 
+def savemat(betas, roi_mask, acts):
+    """Save cnn activations and fmri responses to numpy array"""
+    # get fmri data
+    x, y, z = np.nonzero(roi_mask)
+    print '%s voxels in the mask'%(x.shape[0])
+    voxel_rsps = np.zeros((betas.shape[3], x.shape[0]))
+    for i in range(x.shape[0]):
+        vxl_rsps[:, i] = betas[x[i], y[i], z[i]]
+    # get cnn data
+    cnn_rsps = np.zeros((acts.shape[0], acts.shape[3]))
+    for i in range(acts.shape[3]):
+        tmp_act = acts[..., j]
+        tmp_act = tmp_act.reshape((800, 36)).sum(axis=1)
+        cnn_rsps[:, i] = tmp_act
+    np.savez('ffa_cnn_rsp', vxl_rsp=vxl_rsp, cnn_rsp=cnn_rsp)
+
 def act_fmri_corr(betas, roi_mask, acts):
     """Calculate correlation between cnn activations and fmri responses."""
     x, y, z = np.nonzero(roi_mask)
@@ -47,7 +63,8 @@ def act_fmri_corr(betas, roi_mask, acts):
 
 if __name__=='__main__':
     root_dir = r'/nfs/diskstation/projects/emotionPro/workshop/glmmodel'
-    
+
+    # analysis info
     sid = 'S1'
     val_run_id = 5
 
@@ -76,5 +93,9 @@ if __name__=='__main__':
         act_datas.append(a)
     acts = np.concatenate(tuple(act_datas), axis=0)
 
-    act_fmri_corr(betas, roi_mask, acts)
+    # save raw data
+    savemat(betas, roi_mask, acts)
+
+    # calculate correlation between cnn activation and fmri
+    #act_fmri_corr(betas, roi_mask, acts)
 
