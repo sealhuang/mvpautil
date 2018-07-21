@@ -25,7 +25,7 @@ def save2mat(betas, roi_mask, acts):
         tmp_act = acts[..., i]
         tmp_act = tmp_act.reshape((800, 36)).sum(axis=1)
         cnn_rsps[:, i] = tmp_act
-    savemat('ffa_cnn_rsp.mat', {'vxl_rsp': vxl_rsp, 'cnn_rsp': cnn_rsp})
+    savemat('ffa_cnn_rsp.mat', dict(vxl_rsp=vxl_rsps, cnn_rsp=cnn_rsps))
 
 def act_fmri_corr(betas, roi_mask, acts):
     """Calculate correlation between cnn activations and fmri responses."""
