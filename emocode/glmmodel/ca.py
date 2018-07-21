@@ -22,7 +22,7 @@ def save2mat(betas, roi_mask, acts):
     # get cnn data
     cnn_rsps = np.zeros((acts.shape[0], acts.shape[3]))
     for i in range(acts.shape[3]):
-        tmp_act = acts[..., j]
+        tmp_act = acts[..., i]
         tmp_act = tmp_act.reshape((800, 36)).sum(axis=1)
         cnn_rsps[:, i] = tmp_act
     savemat('ffa_cnn_rsp.mat', {'vxl_rsp': vxl_rsp, 'cnn_rsp': cnn_rsp})
