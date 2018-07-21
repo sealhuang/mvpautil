@@ -3,6 +3,7 @@
 
 import os
 import numpy as np
+from scipy.io import savemat
 import nibabel as nib
 import matplotlib.pylab as plt
 
@@ -10,7 +11,7 @@ from nitools import roi as niroi
 from nitools import base as nibase
 
 
-def savemat(betas, roi_mask, acts):
+def save2mat(betas, roi_mask, acts):
     """Save cnn activations and fmri responses to numpy array"""
     # get fmri data
     x, y, z = np.nonzero(roi_mask)
@@ -24,7 +25,7 @@ def savemat(betas, roi_mask, acts):
         tmp_act = acts[..., j]
         tmp_act = tmp_act.reshape((800, 36)).sum(axis=1)
         cnn_rsps[:, i] = tmp_act
-    np.savez('ffa_cnn_rsp', vxl_rsp=vxl_rsp, cnn_rsp=cnn_rsp)
+    savemat('ffa_cnn_rsp.mat', {'vxl_rsp': vxl_rsp, 'cnn_rsp': cnn_rsp})
 
 def act_fmri_corr(betas, roi_mask, acts):
     """Calculate correlation between cnn activations and fmri responses."""
@@ -94,7 +95,7 @@ if __name__=='__main__':
     acts = np.concatenate(tuple(act_datas), axis=0)
 
     # save raw data
-    savemat(betas, roi_mask, acts)
+    save2mat(betas, roi_mask, acts)
 
     # calculate correlation between cnn activation and fmri
     #act_fmri_corr(betas, roi_mask, acts)
