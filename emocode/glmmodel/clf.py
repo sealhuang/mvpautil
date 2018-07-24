@@ -555,6 +555,52 @@ def get_searchlight_p(root_dir, sid):
                    ip_hr_file]
         os.system(' '.join(str_cmd))
 
+def fdr(root_dir, sid, alpha=0.05):
+    """Conduct a FDR correction for p in SVM based searchlight analysis."""
+    work_dir = os.path.join(root_dir, 'workshop', 'glmmodel', 'searchlight')
+
+    print 'Load mask data ...'
+    mask_file = os.path.join(work_dir, sid, 'func_mask.nii.gz')
+    mask_data = nib.load(mask_file).get_data()
+    mask_data = mask_data>0
+
+    print 'Load CV-p data ...'
+    p_file = os.path.join(work_dir, sid, 'svm_rbf_tmean_p.nii.gz')
+    p_val = nib.load(p_file).get_data()
+
+    # FDR calculation
+    mask_coord = niroi.get_roi_coord(mask_data)
+    vxl_num = mask_data.sum()
+    p_vtr = np.zeros((vxl_num,))
+    i = 0
+    for c in mask_coord:
+        a = p_val[c[0], c[1], c[2]]
+        p_vtr[i] = a
+        i += 1
+    p_vtr.sort()
+    for i in range(vxl_num, 0, -1):
+        a = p_val[i-1]
+        if a <= (i*1.0/vxl_num*alpha):
+            break
+    print 'Threshold p: %s'%(a)
+    thres = a
+    fdr_p_val = np.zeros_like(p_val)
+    fdr_p_val[p_val<=thres] = 1
+
+    # save to nifti
+    aff = nib.load(mask_file).affine
+    fdr_file = os.path.join(subj_dir, 'svm_rbf_tmean_p_fdr.nii.gz')
+    nibase.save2nifti(fdr_p_val, aff, fdr_file)
+    func2anat_mat = os.path.join(root_dir, 'workshop', 'glmmodel', 'nii',
+                                 sid, 'ref_vol2highres.mat')
+    t1brain_vol = os.path.join(root_dir, 'nii', sid+'P1', '3danat',
+                               'reg_fsl', 'T1_brain.nii.gz')
+    if os.path.exists(func2anat_mat):
+        fdr_hr_file =os.path.join(subj_dir,'svm_rbf_tmean_p_fdr_highres.nii.gz')
+        str_cmd = ['flirt', '-in', fdr_file, '-ref', t1brain_vol,
+                   '-applyxfm', '-init', func2anat_mat, '-out', fdr_hr_file]
+        os.system(' '.join(str_cmd))
+
 
 if __name__=='__main__':
     root_dir = r'/nfs/diskstation/projects/emotionPro'
@@ -569,6 +615,7 @@ if __name__=='__main__':
     #svm_searchlight_cv(root_dir, 'S1')
     #random_svm_searchlight(root_dir, 'S1', 1000, 10)
     get_searchlight_p(root_dir, 'S1')
+    fdr(root_dir, 'S1', alpha=0.05)
 
     #roi_svm(root_dir, 'S1', 'face_roi_mprm.nii.gz')
 
