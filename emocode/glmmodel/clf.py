@@ -573,7 +573,7 @@ def fdr(root_dir, sid, alpha=0.05):
     vxl_num = mask_data.sum()
     fdr_p_val = np.zeros_like(p_val)
     # iter for each emotion type
-    for e in fdr_p_val.shape[3]:
+    for e in range(fdr_p_val.shape[3]):
         p_vtr = np.zeros((vxl_num,))
         i = 0
         for c in mask_coord:
