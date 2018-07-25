@@ -591,16 +591,19 @@ def fdr(root_dir, sid, alpha=0.05):
 
     # save to nifti
     aff = nib.load(mask_file).affine
-    fdr_file = os.path.join(subj_dir, 'svm_rbf_tmean_p_fdr.nii.gz')
+    fdr_file = os.path.join(work_dir, sid, 'svm_rbf_tmean_p_fdr.nii.gz')
     nibase.save2nifti(fdr_p_val, aff, fdr_file)
     func2anat_mat = os.path.join(root_dir, 'workshop', 'glmmodel', 'nii',
                                  sid, 'ref_vol2highres.mat')
     t1brain_vol = os.path.join(root_dir, 'nii', sid+'P1', '3danat',
                                'reg_fsl', 'T1_brain.nii.gz')
     if os.path.exists(func2anat_mat):
-        fdr_hr_file =os.path.join(subj_dir,'svm_rbf_tmean_p_fdr_highres.nii.gz')
+        fdr_hr_file =os.path.join(work_dir, sid,
+                                  'svm_rbf_tmean_p_fdr_highres.nii.gz')
         str_cmd = ['flirt', '-in', fdr_file, '-ref', t1brain_vol,
-                   '-applyxfm', '-init', func2anat_mat, '-out', fdr_hr_file]
+                   '-applyxfm', '-init', func2anat_mat,
+                   '-interp', 'nearestneighbour',
+                   '-out', fdr_hr_file]
         os.system(' '.join(str_cmd))
 
 
