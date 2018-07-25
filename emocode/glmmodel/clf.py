@@ -571,21 +571,23 @@ def fdr(root_dir, sid, alpha=0.05):
     # FDR calculation
     mask_coord = niroi.get_roi_coord(mask_data)
     vxl_num = mask_data.sum()
-    p_vtr = np.zeros((vxl_num,))
-    i = 0
-    for c in mask_coord:
-        a = p_val[c[0], c[1], c[2]]
-        p_vtr[i] = a
-        i += 1
-    p_vtr.sort()
-    for i in range(vxl_num, 0, -1):
-        a = p_val[i-1]
-        if a <= (i*1.0/vxl_num*alpha):
-            break
-    print 'Threshold p: %s'%(a)
-    thres = a
     fdr_p_val = np.zeros_like(p_val)
-    fdr_p_val[p_val<=thres] = 1
+    # iter for each emotion type
+    for e in fdr_p_val.shape[3]:
+        p_vtr = np.zeros((vxl_num,))
+        i = 0
+        for c in mask_coord:
+            a = p_val[c[0], c[1], c[2], e]
+            p_vtr[i] = a
+            i += 1
+        p_vtr.sort()
+        for i in range(vxl_num, 0, -1):
+            a = p_vtr[i-1]
+            if a <= (i*1.0/vxl_num*alpha):
+                break
+        print 'Threshold p for emotion %s: %s'%(e+1, a)
+        thres = a
+        fdr_p_val[p_val[..., e]<=thres, e] = 1
 
     # save to nifti
     aff = nib.load(mask_file).affine
