@@ -568,6 +568,9 @@ def fdr(root_dir, sid, alpha=0.05):
     p_file = os.path.join(work_dir, sid, 'svm_rbf_tmean_p.nii.gz')
     p_val = nib.load(p_file).get_data()
 
+    fdr_thresh_file = os.path.join(work_dir, sid, 'fdr_threshold.csv')
+    fdr_thresh_f = open(fdr_thresh_file, 'wb')
+
     # FDR calculation
     mask_coord = niroi.get_roi_coord(mask_data)
     vxl_num = mask_data.sum()
@@ -588,6 +591,8 @@ def fdr(root_dir, sid, alpha=0.05):
         print 'Threshold p for emotion %s: %s'%(e+1, a)
         thres = a
         fdr_p_val[p_val[..., e]<=thres, e] = 1
+        fdr_thresh_f.write('Threshold p for emotion %s: %s\n'%(e+1, a))
+    fdr_thresh_f.close()
 
     # save to nifti
     aff = nib.load(mask_file).affine
@@ -606,6 +611,42 @@ def fdr(root_dir, sid, alpha=0.05):
                    '-out', fdr_hr_file]
         os.system(' '.join(str_cmd))
 
+def p2surf(root_dir, sid):
+    """Register fdr-corrected p value from volume to surface."""
+    subj_dir = os.path.join(root_dir, 'workshop', 'glmmodel', 'searchlight',sid)
+    work_dir = os.path.join(subj_dir, 'surf_reg')
+    if not os.path.exists(work_dir):
+        os.system('mkdir %s'%(work_dir))
+
+    # set subject dir
+    os.environ['SUBJECTS_DIR'] = os.path.join(root_dir, 'freesurfer')
+
+    # get fdr masked p file
+    fdr_p_file = os.path.join(work_dir, 'svm_rbf_tmean_p_masked.nii.gz')
+    p_file = os.path.join(subj_dir, 'svm_rbf_tmean_p.nii.gz')
+    fdr_mask_file = os.path.join(subj_dir, 'svm_rbf_tmean_p_fdr.nii.gz')
+    str_cmd = ['fslmaths', p_file, '-mul -1', '-add 1',
+               '-mul', fdr_mask_file, fdr_p_file]
+    os.system(' '.join(str_cmd))
+
+    # split p file
+    str_cmd = ['fslsplit', fdr_p_file, 'emo_p_']
+    os.system(' '.join(str_cmd))
+    str_cmd = ['mv', 'emo_p_*', work_dir]
+    os.system(' '.join(str_cmd))
+
+    # register volume to surface
+    reg_lta = os.path.join(root_dir, 'workshop', 'glmmodel', 'nii', sid,
+                           'surf_reg', 'register.lta')
+    for i in range(4):
+        vol_file = os.path.join(work_dir, 'emo_p_000%s.nii.gz'%(i))
+        for h in ['lh', 'rh']:
+            surf_file = os.path.join(work_dir, '%s_fdr_p_emo_%s.mgh'%(h, i))
+            str_cmd = ['mri_vol2surf', '--mov', vol_file, '--reg', reg_lta,
+                       '--projfrac', '0.5', '--interp', 'trilinear',
+                       '--hemi', h, '--o', surf_file]
+            os.system(' '.join(str_cmd))
+
 
 if __name__=='__main__':
     root_dir = r'/nfs/diskstation/projects/emotionPro'
@@ -619,8 +660,9 @@ if __name__=='__main__':
     #svm_searchlight(root_dir, 'S1', 1)
     #svm_searchlight_cv(root_dir, 'S1')
     #random_svm_searchlight(root_dir, 'S1', 1000, 10)
-    get_searchlight_p(root_dir, 'S1')
-    fdr(root_dir, 'S1', alpha=0.05)
+    #get_searchlight_p(root_dir, 'S1')
+    #fdr(root_dir, 'S1', alpha=0.05)
+    p2surf(root_dir, 'S1')
 
     #roi_svm(root_dir, 'S1', 'face_roi_mprm.nii.gz')
 
