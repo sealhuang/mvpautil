@@ -643,7 +643,7 @@ def p2surf(root_dir, sid):
         for h in ['lh', 'rh']:
             surf_file = os.path.join(work_dir, '%s_fdr_p_emo_%s.mgh'%(h, i))
             str_cmd = ['mri_vol2surf', '--mov', vol_file, '--reg', reg_lta,
-                       '--projfrac', '0.5', '--interp', 'trilinear',
+                       '--projfrac', '0.5', '--interp', 'nearest',
                        '--hemi', h, '--o', surf_file]
             os.system(' '.join(str_cmd))
 
