@@ -647,6 +647,21 @@ def p2surf(root_dir, sid):
                        '--hemi', h, '--o', surf_file]
             os.system(' '.join(str_cmd))
 
+def acc2mni(root_dir, sid):
+    """Convert classification results to MNI standard space."""
+    work_dir = os.path.join(root_dir, 'workshop', 'glmmodel', 'searchlight')
+    subj_dir = os.path.join(work_dir, sid)
+
+    acc_file = os.path.join(subj_dir, 'svm_rbf_tmean_highres.nii.gz')
+    highres2mni_mat = os.path.join(root_dir, 'nii', sid+'P1', '3danat',
+                                   'reg_fsl', 'highres2standard_2mm.mat')
+    mni_vol = os.path.join(os.environ['FSL_DIR'], 'data', 'standard',
+                           'MNI152_T1_2mm_brain.nii.gz')
+    mni_acc_file = os.path.join(subj_dir, 'svm_rbf_tmean_mni_linear.nii.gz')
+    str_cmd = ['flirt', '-in', acc_file, '-ref', mni_vol, '-applyxfm', '-init',
+               highres2mni_mat, '-out', mni_acc_file]
+    os.system(' '.join(str_cmd))
+
 
 if __name__=='__main__':
     root_dir = r'/nfs/diskstation/projects/emotionPro'
@@ -662,7 +677,8 @@ if __name__=='__main__':
     #random_svm_searchlight(root_dir, 'S1', 1000, 10)
     #get_searchlight_p(root_dir, 'S1')
     #fdr(root_dir, 'S1', alpha=0.05)
-    p2surf(root_dir, 'S1')
+    #p2surf(root_dir, 'S1')
+    acc2mni(root_dir, 'S1')
 
     #roi_svm(root_dir, 'S1', 'face_roi_mprm.nii.gz')
 
