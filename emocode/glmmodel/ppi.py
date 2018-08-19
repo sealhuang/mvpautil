@@ -11,50 +11,34 @@ from nitools import roi as niroi
 from nitools.roi import extract_mean_ts
 
 
-def get_emo_sequence(root_dir, subj):
-    """Get trial sequence for each emotion condition."""
+def get_emo_seq(root_dir, sid):
+    """Get trial indexes for each emotion condition for each run."""
     beh_dir = os.path.join(root_dir, 'beh')
-    par_dir = os.path.join(root_dir, 'par', 'emo')
-    # get run number for subject
-    tag_list = os.listdir(beh_dir)
-    tag_list = [line for line in tag_list if line[-3:]=='csv']
-    run_num = len([line for line in tag_list if line.split('_')[2]==subj])
-    # sequence var
-    seq = {}
-    for r in range(run_num):
-        train_trial_file = os.path.join(par_dir, 'trial_seq_%s_train.txt'%(r+1))
-        test_trial_file = os.path.join(par_dir, 'trial_seq_%s_test.txt'%(r+1))
-        if not os.path.exists(train_trial_file):
-            print '%s does not exists'%(train_trial_file)
-            continue
-        # dict for run `r+1`
-        seq[r+1] = {'train': [], 'test': []}
-        train_trials = open(train_trial_file, 'r').readlines()
-        test_trials = open(test_trial_file, 'r').readlines()
-        train_trials = [line.strip().split(',') for line in train_trials]
-        test_trials = [line.strip().split(',') for line in test_trials]
-        trial_tag_f = os.path.join(beh_dir, 'trial_tag_%s_run%s.csv'%(subj,r+1))
-        trial_tag = open(trial_tag_f, 'r').readlines()
-        trial_tag.pop(0)
-        trial_tag = [line.strip().split(',') for line in trial_tag]
-        for train_idx in range(len(train_trials)):
-            img = train_trials[train_idx][1].split('\\')[1]
-            emo = int([line[1] for line in trial_tag if line[0]==img][0])
-            subj_emo = [line[2] for line in trial_tag if line[0]==img][0]
-            if subj_emo=='NaN':
-                subj_emo = 0
-            else:
-                subj_emo = int(subj_emo)
-            seq[r+1]['train'].append([train_idx, emo, subj_emo])
-        for test_idx in range(len(test_trials)):
-            img = test_trials[test_idx][1].split('\\')[1]
-            emo = int([line[1] for line in trial_tag if line[0]==img][0])
-            subj_emo = [line[2] for line in trial_tag if line[0]==img][0]
-            if subj_emo=='NaN':
-                subj_emo = 0
-            else:
-                subj_emo = int(subj_emo)
-            seq[r+1]['test'].append([test_idx, emo, subj_emo])
+    # get subject name
+    subj_name = {'S1': 'liqing', 'S2': 'zhangjipeng', 'S3': 'zhangdan',
+                 'S4': 'wanghuicui', 'S5': 'zhuzhiyuan', 'S6': 'longhailiang',
+                 'S7': 'liranran'}
+    subj = subj_name[sid]
+    # seq var
+    seq = []
+    # get trial indexes for each run 
+    for i in range(10):
+        stim_label = []
+        img_list = []
+        # load experiment record
+        record = os.path.join(beh_dir, 'trial_record_%s_run%s.csv'%(subj, i+1))
+        record_info = open(record, 'r').readlines()
+        record_info.pop(0)
+        record_info = [line.strip().split(',') for line in record_info]
+        for line in record_info:
+            if not line[0] in img_list:
+                img_list.append(line[0])
+                stim_label.append(int(line[1]))
+        # get trial indexes for each emotion type
+        trial_idx = []
+        for e in range(4):
+            trial_idx.append(np.nonzero(np.array(stim_label==(e+1)))[0])
+        seq.append(trial_idx)
     return seq
 
 def get_emo_ts(root_dir, seq):
@@ -311,9 +295,9 @@ def get_trial_tag(root_dir, subj):
 if __name__=='__main__':
     root_dir = r'/nfs/diskstation/projects/emotionPro'
 
-    seq = get_emo_sequence(root_dir, 'liqing')
-    #print seq
-    get_emo_ts(root_dir, seq)
+    seq = get_emo_seq(root_dir, 'S1')
+    print seq
+    #get_emo_ts(root_dir, seq)
     #get_trial_data(root_dir, seq)
     #get_conn(root_dir)
     #get_rand_conn(root_dir, 1000)
