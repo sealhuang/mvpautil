@@ -37,7 +37,7 @@ def get_emo_seq(root_dir, sid):
         # get trial indexes for each emotion type
         trial_idx = []
         for e in range(4):
-            trial_idx.append(np.nonzero(np.array(stim_label==(e+1)))[0])
+            trial_idx.append(np.nonzero(np.array(stim_label)==(e+1))[0])
         seq.append(trial_idx)
     return seq
 
