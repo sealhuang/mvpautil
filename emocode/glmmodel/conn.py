@@ -41,98 +41,68 @@ def get_emo_seq(root_dir, sid):
         seq.append(trial_idx)
     return seq
 
-def get_emo_ts(root_dir, seq):
-    """Get neural activity time course of each roi on each emotion condition."""
-    nii_dir = os.path.join(root_dir, 'nii')
-    ppi_dir = os.path.join(root_dir, 'ppi')
-    # load roi
-    rois = nib.load(os.path.join(root_dir, 'group-level', 'rois', 'neurosynth',
-                                 'cube_rois_r2.nii.gz')).get_data()
-    roi_num = int(rois.max())
-    # get run info from scanlist
-    scanlist_file = os.path.join(root_dir, 'doc', 'scanlist.csv')
-    [scan_info, subj_list] = pyunpack.readscanlist(scanlist_file)
-    for subj in subj_list:
-        sid = subj.sess_ID
-        print sid
-        subj_dir = os.path.join(nii_dir, sid, 'emo')
-        # get par index for each emo run
-        if not 'emo' in subj.run_info:
-            continue
-        [run_idx, par_idx] = subj.getruninfo('emo')
-        for i in range(10):
-            if str(i+1) in par_idx:
-                print 'Run %s'%(i+1)
-                # load cope data
-                ipar = par_idx.index(str(i+1))
-                run_dir = os.path.join(subj_dir, '00'+run_idx[ipar])
-                print run_dir
-                train_cope_f = os.path.join(run_dir, 'train_merged_cope.nii.gz')
-                test_cope_f = os.path.join(run_dir, 'test_merged_cope.nii.gz')
-                train_cope = nib.load(train_cope_f).get_data()
-                test_cope = nib.load(test_cope_f).get_data()
-                # get trial sequence for each emotion
-                for j in range(4):
-                    train_seq = [line[0] for line in seq[i+1]['train']
-                                    if line[1]==(j+1)]
-                    test_seq = [line[0] for line in seq[i+1]['test']
-                                    if line[1]==(j+1)]
-                    emo_data = np.zeros((91, 109, 91,
-                                        len(train_seq)+len(test_seq)))
-                    emo_data[..., :len(train_seq)] = train_cope[..., train_seq]
-                    emo_data[..., len(train_seq):] = test_cope[..., test_seq]
-                    # get time course for each roi
-                    roi_ts = np.zeros((emo_data.shape[3], roi_num))
-                    for k in range(roi_num):
-                        roi_ts[:, k] = niroi.extract_mean_ts(emo_data,
-                                                             rois==(k+1))
-                    outfile = '%s_roi_ts_run%s_emo%s.npy'%(sid[:2], i+1, j+1)
-                    outfile = os.path.join(ppi_dir, 'decovPPI', outfile)
-                    np.save(outfile, roi_ts)
+def func2mni(root_dir, sid):
+    """Convert functional data from original space into standard space."""
+    conn_dir = os.path.join(root_dir, 'workshop', 'glmmodel', 'conn')
+    subj_dir = os.path.join(conn_dir, sid)
+    if not os.path.exists(subj_dir):
+        os.system('mkdir %s'%(subj_dir))
+    # generate registration mat
+    func2anat_mat = os.path.join(root_dir, 'workshop', 'glmmodel', 'nii',
+                                 sid, 'ref_vol2highres.mat')
+    anat2mni_mat = os.path.join(root_dir, 'nii', sid+'P1', '3danat', 'reg_fsl',
+                                'highres2standard_2mm.mat')
+    func2mni_mat = os.path.join(subj_dir, 'func2standard_2mm.mat')
+    str_cmd = ['convert_xfm', '-omat', func2mni_mat, '-concat',
+               anat2mni_mat, func2anat_mat]
+    os.system(' '.join(str_cmd))
+    # convert func images
+    mni_vol = os.path.join(os.environ['FSL_DIR'], 'data', 'standard',
+                           'MNI152_T1_2mm_brain.nii.gz')
+    beta_file = os.path.join(root_dir, 'workshop', 'glmmodel', 'betas', sid,
+                           '%s_beta_s1_full.nii.gz'%(sid))
+    mni_beta_file = os.path.join(subj_dir, '%s_beta_s1_full_mni.nii.gz'%(sid))
+    str_cmd = ['flirt', '-in', beta_file, '-ref', mni_vol, '-applyxfm', '-init',
+               func2mni_mat, '-out', mni_beta_file]
+    beta_file = os.path.join(root_dir, 'workshop', 'glmmodel', 'betas', sid,
+                           '%s_beta_s2_full.nii.gz'%(sid))
+    mni_beta_file = os.path.join(subj_dir, '%s_beta_s2_full_mni.nii.gz'%(sid))
+    str_cmd = ['flirt', '-in', beta_file, '-ref', mni_vol, '-applyxfm', '-init',
+               func2mni_mat, '-out', mni_beta_file]
 
-def get_trial_data(root_dir, seq):
+def get_emo_ts(root_dir, sid, seq):
     """Get neural activity time course of each roi on each emotion condition."""
-    nii_dir = os.path.join(root_dir, 'nii')
-    ppi_dir = os.path.join(root_dir, 'ppi')
-    # load roi
+    subj_dir = os.path.join(root_dir, 'workshop', 'glmmodel', 'conn', sid)
+
+    # load roi and betas
     rois = nib.load(os.path.join(root_dir, 'group-level', 'rois', 'neurosynth',
-                                 'cube_rois_r2.nii.gz')).get_data()
+                    'merged_hfdn_FDR_0.01_Tmax_s2_cuberoi.nii.gz')).get_data()
     roi_num = int(rois.max())
-    # get run info from scanlist
-    scanlist_file = os.path.join(root_dir, 'doc', 'scanlist.csv')
-    [scan_info, subj_list] = pyunpack.readscanlist(scanlist_file)
-    for subj in subj_list:
-        sid = subj.sess_ID
-        print sid
-        subj_dir = os.path.join(nii_dir, sid, 'emo')
-        # get par index for each emo run
-        if not 'emo' in subj.run_info:
-            continue
-        [run_idx, par_idx] = subj.getruninfo('emo')
-        for i in range(10):
-            if str(i+1) in par_idx:
-                print 'Run %s'%(i+1)
-                # load cope data
-                ipar = par_idx.index(str(i+1))
-                run_dir = os.path.join(subj_dir, '00'+run_idx[ipar])
-                print run_dir
-                train_cope_f = os.path.join(run_dir, 'train_merged_cope.nii.gz')
-                test_cope_f = os.path.join(run_dir, 'test_merged_cope.nii.gz')
-                train_cope = nib.load(train_cope_f).get_data()
-                test_cope = nib.load(test_cope_f).get_data()
-                # get time course for each roi
-                train_x = np.zeros((train_cope.shape[3], roi_num))
-                test_x = np.zeros((test_cope.shape[3], roi_num))
-                for k in range(roi_num):
-                    train_x[:, k]=niroi.extract_mean_ts(train_cope, rois==(k+1))
-                    test_x[:, k] = niroi.extract_mean_ts(test_cope, rois==(k+1))
-                train_y = [line[1] for line in seq[i+1]['train']]
-                test_y = [line[1] for line in seq[i+1]['test']]
-                # save dataset
-                outfile = '%s_run%s_roi_data'%(sid[:2], i+1)
-                outfile = os.path.join(ppi_dir, 'decovPPI', outfile)
-                np.savez(outfile, train_x=train_x, train_y=train_y,
-                                  test_x=test_x, test_y=test_y)
+    beta1_file = os.path.join(subj_dir, '%s_beta_s1_full_mni.nii.gz')
+    beta2_file = os.path.join(subj_dir, '%s_beta_s2_full_mni.nii.gz')
+    beta1 = nib.load(beta1_file).get_data()
+    beta2 = nib.load(beta2_file).get_data()
+
+    # get roi time course for each emotion type
+    roi_ts = np.zeros((4, roi_num, 200))
+    for i in range(10):
+        if i<5:
+            run_beta = beta1[..., (i*80):(i*80+80)]
+        else:
+            run_beta = beta2[..., (i*80-400):(i*80-320)]
+        print run_beta.shape
+        run_roi_ts = np.zeros((4, roi_num, 20))
+        # get trial sequence for each emotion
+        for e in range(4):
+            emo_seq = seq[i][e]
+            emo_beta = run_beta[..., emo_seq]
+            # get time course for each roi
+            for r in roi_num:
+                run_roi_ts[e, r] = niroi.extract_mean_ts(emo_beta, rois==(r+1))
+        roi_ts[:, :, (i*20):(i*20+20)] = run_roi_ts
+
+    outfile = os.path.join(subj_dir, 'roi_ts.npy')
+    np.save(outfile, roi_ts)
 
 def get_conn(root_dir):
     """Get connectivity matrix."""
@@ -295,10 +265,10 @@ def get_trial_tag(root_dir, subj):
 if __name__=='__main__':
     root_dir = r'/nfs/diskstation/projects/emotionPro'
 
-    seq = get_emo_seq(root_dir, 'S1')
-    print seq
-    #get_emo_ts(root_dir, seq)
-    #get_trial_data(root_dir, seq)
+    roi2func(root_dir, 'S1')
+    #seq = get_emo_seq(root_dir, 'S1')
+    #print seq
+    #get_emo_ts(root_dir, 'S1', seq)
     #get_conn(root_dir)
     #get_rand_conn(root_dir, 1000)
     #get_mvp_group_roi(root_dir)
