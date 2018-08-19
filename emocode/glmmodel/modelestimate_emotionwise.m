@@ -1,7 +1,7 @@
-function [design, data, s1results, hrfs, betas, R2] = glmdenoise_pipeline(subj, session)
+function [design, data, s1results, hrfs, betas, R2] = modelestimate_emotionwise(subj, session)
 % 
-% GLMDenoise pipeline script
-% [design, data, s1results, hrfs, betas, R2] = glmdenoise_pipeline(subj, session)
+% Estimate brain activition for each emotion type using glmdenoise pipeline
+% [design, data, s1results, hrfs, betas, R2] = modelestimate_emotionwise(subj, session)
 %     subj: subject name
 %     session: session index
 
@@ -16,7 +16,7 @@ design = cell(1, length(run_list));
 data = cell(1, length(run_list));
 
 for i=1:length(run_list)
-    rundesign = mkdesign(subj, run_list(i));
+    rundesign = mkdesign(subj, run_list(i), 0);
     design{i} = rundesign;
     nii_file = fullfile(nii_dir, 'S1', strcat('mcsfunc_', num2str(run_list(i)), '.nii.gz'));
     nii = load_nii(nii_file);
