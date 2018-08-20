@@ -8,8 +8,31 @@ from scipy import io as sio
 
 from pynit.base import unpack as pyunpack
 from nitools import roi as niroi
+from nitools import base as nibase
 from nitools.roi import extract_mean_ts
 
+
+def refine_rois(root_dir):
+    """Refine ROIs."""
+    orig_roi_file = os.path.join(root_dir, 'group-level', 'rois', 'neurosynth',
+                                'merged_hfdn_mask_Tmax_s2_lmax_roi_orig.nii.gz')
+    roi_info_file = os.path.join(root_dir, 'group-level', 'rois', 'neurosynth',
+                                 'new_neurosynth_roi_info.csv')
+    roi_info = open(roi_info_file, 'r').readlines()
+    roi_info = [line.strip().split(',') for line in roi_info]
+    roi_info.pop(0)
+    # refine rois
+    orig_roi = nib.load(orig_roi_file).get_data()
+    new_roi = np.zeros_like(orig_roi)
+    for line in roi_info:
+        oid = int(line[1])
+        nid = int(line[0])
+        new_roi[orig_roi==oid] = nid
+    # save file
+    new_roi_file = os.path.join(root_dir, 'group-level', 'rois', 'neurosynth',
+                                'merged_hfdn_mask_Tmax_s2_lmax_roi.nii.gz')
+    aff = nib.load(orig_roi_file).affine
+    nibase.save2nifti(new_roi, aff, new_roi_file)
 
 def get_emo_seq(root_dir, sid):
     """Get trial indexes for each emotion condition for each run."""
@@ -64,11 +87,13 @@ def func2mni(root_dir, sid):
     mni_beta_file = os.path.join(subj_dir, '%s_beta_s1_full_mni.nii.gz'%(sid))
     str_cmd = ['flirt', '-in', beta_file, '-ref', mni_vol, '-applyxfm', '-init',
                func2mni_mat, '-out', mni_beta_file]
+    os.system(' '.join(str_cmd))
     beta_file = os.path.join(root_dir, 'workshop', 'glmmodel', 'betas', sid,
                            '%s_beta_s2_full.nii.gz'%(sid))
     mni_beta_file = os.path.join(subj_dir, '%s_beta_s2_full_mni.nii.gz'%(sid))
     str_cmd = ['flirt', '-in', beta_file, '-ref', mni_vol, '-applyxfm', '-init',
                func2mni_mat, '-out', mni_beta_file]
+    os.system(' '.join(str_cmd))
 
 def get_emo_ts(root_dir, sid, seq):
     """Get neural activity time course of each roi on each emotion condition."""
@@ -76,10 +101,10 @@ def get_emo_ts(root_dir, sid, seq):
 
     # load roi and betas
     rois = nib.load(os.path.join(root_dir, 'group-level', 'rois', 'neurosynth',
-                    'merged_hfdn_FDR_0.01_Tmax_s2_cuberoi.nii.gz')).get_data()
+                    'merged_hfdn_mask_Tmax_s2_lmax_roi.nii.gz')).get_data()
     roi_num = int(rois.max())
-    beta1_file = os.path.join(subj_dir, '%s_beta_s1_full_mni.nii.gz')
-    beta2_file = os.path.join(subj_dir, '%s_beta_s2_full_mni.nii.gz')
+    beta1_file = os.path.join(subj_dir, '%s_beta_s1_full_mni.nii.gz'%(sid))
+    beta2_file = os.path.join(subj_dir, '%s_beta_s2_full_mni.nii.gz'%(sid))
     beta1 = nib.load(beta1_file).get_data()
     beta2 = nib.load(beta2_file).get_data()
 
@@ -97,7 +122,7 @@ def get_emo_ts(root_dir, sid, seq):
             emo_seq = seq[i][e]
             emo_beta = run_beta[..., emo_seq]
             # get time course for each roi
-            for r in roi_num:
+            for r in range(roi_num):
                 run_roi_ts[e, r] = niroi.extract_mean_ts(emo_beta, rois==(r+1))
         roi_ts[:, :, (i*20):(i*20+20)] = run_roi_ts
 
@@ -265,10 +290,11 @@ def get_trial_tag(root_dir, subj):
 if __name__=='__main__':
     root_dir = r'/nfs/diskstation/projects/emotionPro'
 
-    roi2func(root_dir, 'S1')
-    #seq = get_emo_seq(root_dir, 'S1')
+    #refine_rois(root_dir)
+    #func2mni(root_dir, 'S1')
+    seq = get_emo_seq(root_dir, 'S1')
     #print seq
-    #get_emo_ts(root_dir, 'S1', seq)
+    get_emo_ts(root_dir, 'S1', seq)
     #get_conn(root_dir)
     #get_rand_conn(root_dir, 1000)
     #get_mvp_group_roi(root_dir)
