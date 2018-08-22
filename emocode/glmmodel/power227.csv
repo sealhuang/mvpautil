@@ -1,0 +1,228 @@
+RID,FSL_Label,MNI-X,MNI-Y,MNI-Z,Suggested System
+203,precuneus,11,-39,50,Salience
+204,SMG,55,-45,37,Salience
+205,precentral_gyrus,42,0,47,Salience
+206,MFG,31,33,26,Salience
+207,IFG,48,22,10,Salience
+208,insula,-35,20,0,Salience
+209,insula,36,22,3,Salience
+210,OFC/IFG,37,32,-2,Salience
+211,insula,34,16,-8,Salience
+212,ACC,-11,26,25,Salience
+213,mFC/paracingulate,-1,15,44,Salience
+214,frontal_pole_sup/SFG,-28,52,21,Salience
+215,ACC,0,30,27,Salience
+216,ACC,5,23,37,Salience
+217,ACC,10,22,27,Salience
+218,frontal_pole_sup/MFG,31,56,14,Salience
+219,frontal_pole_sup/SFG,26,50,27,Salience
+220,frontal_pole_sup/MFG,-39,51,17,Salience
+143,lingual_gyrus,18,-47,-10,Visual
+144,LOC,40,-72,14,Visual
+145,occip_cortex/intracalcarine,8,-72,11,Visual
+146,occip_cortex/intracalcarine,-8,-81,7,Visual
+147,LOC,-28,-79,19,Visual
+148,lingual_gyrus,20,-66,2,Visual
+149,occip_pole/middle_occip_gyrus,-24,-91,19,Visual
+150,fusiform,27,-59,-9,Visual
+151,lingual_gyrus,-15,-72,-8,Visual
+152,occip_cortex/intracalcarine,-18,-68,5,Visual
+153,inferior_occip_cortex,43,-78,-12,Visual
+154,inferior_occip_cortex,-47,-76,-10,Visual
+155,occip_pole_sup,-14,-91,31,Visual
+156,occip_cortex_sup,15,-87,37,Visual
+157,LOC,29,-77,25,Visual
+158,occip_cortex/fusiform,20,-86,-2,Visual
+159,occip_cortex/cuneus,15,-77,31,Visual
+160,lingual_gyrus,-16,-52,-1,Visual
+161,LOC/occip_cortex,42,-66,-8,Visual
+162,LOC,24,-87,24,Visual
+163,occip_cortex/cuneus,6,-72,24,Visual
+164,LOC,-42,-74,0,Visual
+165,fusiform,26,-79,-16,Visual
+166,occip_cortex/cuneus,-16,-77,34,Visual
+167,occip_cortex/cuneus,-3,-81,21,Visual
+168,LOC/inf_occip_gyrus,-40,-88,-6,Visual
+169,LOC,37,-84,13,Visual
+170,occip_cortex/intracalcarine,6,-81,6,Visual
+171,occip_pole,-26,-90,3,Visual
+172,fusiform,-33,-79,-13,Visual
+173,LOC,37,-81,1,Visual
+222,thalamus,6,-24,0,Subcortical
+223,thalamus,-2,-13,12,Subcortical
+224,thalamus,-10,-18,7,Subcortical
+225,thalamus,12,-17,8,Subcortical
+226,brainstem/SC,-5,-28,-4,Subcortical
+227,putamen,-22,7,-5,Subcortical
+228,putamen/white_matter,-15,4,8,Subcortical
+229,putamen,31,-14,2,Subcortical
+230,putamen,23,10,1,Subcortical
+231,putamen,29,1,4,Subcortical
+232,putamen,-31,-11,0,Subcortical
+233,putamen/white_matter,15,5,7,Subcortical
+234,thalamus,9,-4,6,Subcortical
+13,precuneus,-7,-52,61,Sensory/somatomotor Hand
+14,cingulate,-14,-18,40,Sensory/somatomotor Hand
+15,cingulate,0,-15,47,Sensory/somatomotor Hand
+16,cingulate,10,-2,45,Sensory/somatomotor Hand
+17,med_precentral_gyrus,-7,-21,65,Sensory/somatomotor Hand
+18,postcentral_gyrus,-7,-33,72,Sensory/somatomotor Hand
+19,postcentral_gyrus,13,-33,75,Sensory/somatomotor Hand
+20,postcentral_gyrus,-54,-23,43,Sensory/somatomotor Hand
+21,precentral_gyrus,29,-17,71,Sensory/somatomotor Hand
+22,postcentral_gyrus,10,-46,73,Sensory/somatomotor Hand
+23,postcentral_gyrus,-23,-30,72,Sensory/somatomotor Hand
+24,precentral_gyrus,-40,-19,54,Sensory/somatomotor Hand
+25,SPL,29,-39,59,Sensory/somatomotor Hand
+26,postcentral_gyrus/IPL,50,-20,42,Sensory/somatomotor Hand
+27,postcentral_gyrus,-38,-27,69,Sensory/somatomotor Hand
+28,precentral_gyrus,20,-29,60,Sensory/somatomotor Hand
+29,precentral_gyrus,44,-8,57,Sensory/somatomotor Hand
+30,SPL/IPL,-29,-43,61,Sensory/somatomotor Hand
+31,precentral_gyrus,10,-17,74,Sensory/somatomotor Hand
+32,SPL,22,-42,69,Sensory/somatomotor Hand
+33,postcentral_gyrus/SMG_border,-45,-32,47,Sensory/somatomotor Hand
+34,postcentral_gyrus,-21,-31,61,Sensory/somatomotor Hand
+35,precentral_gyrus,-13,-17,75,Sensory/somatomotor Hand
+36,postcentral_gyrus,42,-20,55,Sensory/somatomotor Hand
+37,precentral_gyrus,-38,-15,69,Sensory/somatomotor Hand
+38,postcentral_gyrus,-16,-46,73,Sensory/somatomotor Hand
+39,med_precentral_gyrus,2,-28,60,Sensory/somatomotor Hand
+40,med_precentral_gyrus,3,-17,58,Sensory/somatomotor Hand
+41,central_sulcus,38,-17,45,Sensory/somatomotor Hand
+255,postcentral_gyrus/SMG_border,47,-30,49,Sensory/somatomotor Hand
+42,precentral_gyrus,-49,-11,35,Sensory/somatomotor Mouth
+43,insula,36,-9,14,Sensory/somatomotor Mouth
+44,precentral_gyrus,51,-6,32,Sensory/somatomotor Mouth
+45,postcentral_gyrus,-53,-10,24,Sensory/somatomotor Mouth
+46,postcentral_gyrus,66,-8,25,Sensory/somatomotor Mouth
+251,SPL,10,-62,61,Dorsal attention
+252,MTG/LOC,-52,-63,5,Dorsal attention
+256,SPL,22,-65,48,Dorsal attention
+257,MTG/LOC,46,-59,4,Dorsal attention
+258,SPL,25,-58,60,Dorsal attention
+259,SPL,-33,-46,47,Dorsal attention
+260,LOC/parietal_border,-27,-71,37,Dorsal attention
+261,MFG,-32,-1,54,Dorsal attention
+262,ITG/fusiform,-42,-60,-9,Dorsal attention
+263,SPL,-17,-59,64,Dorsal attention
+264,precentral_gyrus,29,-5,54,Dorsal attention
+61,heschl's_gyrus,32,-26,13,Auditory
+62,STG,65,-33,20,Auditory
+63,STG,58,-16,7,Auditory
+64,planum_temporale/STG?,-38,-33,17,Auditory
+65,planum_temporale/STG,-60,-25,14,Auditory
+66,STG/planum_temporale,-49,-26,5,Auditory
+67,parietal_operculum/insula,43,-23,20,Auditory
+68,parietal_operculum/SMG,-50,-34,26,Auditory
+69,postcentral_gyrus/central_operculum,-53,-22,23,Auditory
+70,parietal_operculum,-55,-9,12,Auditory
+71,parietal_operculum,56,-5,13,Auditory
+72,postcentral_gyrus,59,-17,29,Auditory
+73,pos_insula,-30,-27,12,Auditory
+47,SMA,-3,2,53,Cingulo-opercular Task Control
+48,SMG,54,-28,34,Cingulo-opercular Task Control
+49,SFG,19,-8,64,Cingulo-opercular Task Control
+50,SFG,-16,-5,71,Cingulo-opercular Task Control
+51,cingulate/SMA,-10,-2,42,Cingulo-opercular Task Control
+52,insula,37,1,-4,Cingulo-opercular Task Control
+53,SFG,13,-1,70,Cingulo-opercular Task Control
+54,SMA,7,8,51,Cingulo-opercular Task Control
+55,central_operculum/insula,-45,0,9,Cingulo-opercular Task Control
+56,central_operculum/insula,49,8,-1,Cingulo-opercular Task Control
+57,insula,-34,3,4,Cingulo-opercular Task Control
+58,temporal_pole_sup,-51,8,-2,Cingulo-opercular Task Control
+59,ACC,-5,18,34,Cingulo-opercular Task Control
+60,insula,36,10,1,Cingulo-opercular Task Control
+74,LOC,-41,-75,26,Default mode
+75,frontal_pole/mFG,6,67,-4,Default mode
+76,mFG,8,48,-15,Default mode
+77,PCC/parahipp_gyrus,-13,-40,1,Default mode
+78,frontal_pole_inf/SFG,-18,63,-9,Default mode
+79,LOC/MTG,-46,-61,21,Default mode
+80,LOC,43,-72,28,Default mode
+81,temporal_pole,-44,12,-34,Default mode
+82,temporal_pole,46,16,-30,Default mode
+83,MTG,-68,-23,-16,Default mode
+86,LOC/AG,-44,-65,35,Default mode
+87,LOC/parietal_border,-39,-75,44,Default mode
+88,precuneus/PCC,-7,-55,27,Default mode
+89,precuneus,6,-59,35,Default mode
+90,precuneus/PCC,-11,-56,16,Default mode
+91,PCC,-3,-49,13,Default mode
+92,PCC,8,-48,31,Default mode
+93,precuneus,15,-63,26,Default mode
+94,cingulate/PCC,-2,-37,44,Default mode
+95,precuneus/PCC,11,-54,17,Default mode
+96,LOC/AG,52,-59,36,Default mode
+97,SFG,23,33,48,Default mode
+98,SFG,-10,39,52,Default mode
+99,SFG,-16,29,53,Default mode
+100,MFG,-35,20,51,Default mode
+101,MFG,22,39,39,Default mode
+102,frontal_pole_sup/SFG,13,55,38,Default mode
+103,frontal_pole_sup/SFG,-10,55,39,Default mode
+104,frontal_pole_sup/SFG,-20,45,39,Default mode
+105,medial_frontal_gyrus,6,54,16,Default mode
+106,frontal_pole_sup/SFG,6,64,22,Default mode
+107,mFC/paracingulate,-7,51,-1,Default mode
+108,mFC/paracingulate,9,54,3,Default mode
+109,mFC/paracingulate,-3,44,-9,Default mode
+110,mFC/paracingulate,8,42,-5,Default mode
+111,mFG/cingulate,-11,45,8,Default mode
+112,mFC/paracingulate,-2,38,36,Default mode
+113,cingulate,-3,42,16,Default mode
+114,frontal_pole/SFG,-20,64,19,Default mode
+115,mFC/paracingulate,-8,48,23,Default mode
+116,MTG/ITG,65,-12,-19,Default mode
+117,MTG,-56,-13,-10,Default mode
+118,MTG,-58,-30,-4,Default mode
+119,MTG,65,-31,-9,Default mode
+120,MTG,-68,-41,-5,Default mode
+121,SFG,13,30,59,Default mode
+122,cingulate,12,36,20,Default mode
+123,MTG,52,-2,-16,Default mode
+124,parahipp_gyrus,-26,-40,-8,Default mode
+125,parahipp_gyrus,27,-37,-13,Default mode
+126,fusiform,-34,-38,-16,Default mode
+127,cerebellum,28,-77,-32,Default mode
+128,temporal_pole/MTG,52,7,-30,Default mode
+129,MTG,-53,3,-27,Default mode
+130,AG,47,-50,29,Default mode
+131,MTG,-49,-42,1,Default mode
+137,OFC/IFG,-46,31,-13,Default mode
+139,frontal_pole_inf/IFG,49,35,-12,Default mode
+138,SFG/SMA,-10,11,67,Ventral attention
+235,SMG/STG/TPJ,54,-43,22,Ventral attention
+236,MTG,-56,-50,10,Ventral attention
+237,STG,-55,-40,14,Ventral attention
+238,STG,52,-33,8,Ventral attention
+239,MTG,51,-29,-4,Ventral attention
+240,MTG/STG,56,-46,11,Ventral attention
+241,IFG,53,33,1,Ventral attention
+242,IFG,-49,25,-1,Ventral attention
+174,precentral_gyrus,-44,2,46,Fronto-parietal Task Control
+175,MFG,48,25,27,Fronto-parietal Task Control
+176,IFG,-47,11,23,Fronto-parietal Task Control
+177,SMG,-53,-49,43,Fronto-parietal Task Control
+178,SFG,-23,11,64,Fronto-parietal Task Control
+179,ITG,58,-53,-14,Fronto-parietal Task Control
+180,frontal_pole_inf/MFG,24,45,-15,Fronto-parietal Task Control
+181,frontal_pole_inf/MFG,34,54,-13,Fronto-parietal Task Control
+186,precentral_gyrus,47,10,33,Fronto-parietal Task Control
+187,precentral_gyrus/MFG,-41,6,33,Fronto-parietal Task Control
+188,MFG,-42,38,21,Fronto-parietal Task Control
+189,MFG/frontal_pole,38,43,15,Fronto-parietal Task Control
+190,SMG,49,-42,45,Fronto-parietal Task Control
+191,SPL,-28,-58,48,Fronto-parietal Task Control
+192,AG,44,-53,47,Fronto-parietal Task Control
+193,MFG_sup,32,14,56,Fronto-parietal Task Control
+194,LOC/parietal_border,37,-65,40,Fronto-parietal Task Control
+195,AG,-42,-55,45,Fronto-parietal Task Control
+196,MFG,40,18,40,Fronto-parietal Task Control
+197,frontal_pole/MFG,-34,55,4,Fronto-parietal Task Control
+198,frontal_pole/IFG,-42,45,-2,Fronto-parietal Task Control
+199,SPL/IPL,33,-53,44,Fronto-parietal Task Control
+200,frontal_pole,43,49,-2,Fronto-parietal Task Control
+201,MFG,-42,25,30,Fronto-parietal Task Control
+202,mFC/paracingulate,-3,26,44,Fronto-parietal Task Control

@@ -6,7 +6,6 @@ import numpy as np
 import nibabel as nib
 from scipy import io as sio
 
-from pynit.base import unpack as pyunpack
 from nitools import roi as niroi
 from nitools import base as nibase
 from nitools.roi import extract_mean_ts
@@ -217,6 +216,29 @@ def get_rand_conn(root_dir, rand_num):
 
 def power264roi(root_dir):
     """Make ROI file based on Power264 atlas."""
+    roi_info = open('power227.csv').readlines()
+    roi_info.pop(0)
+    roi_info = [line.strip().split(',') for line in roi_info]
+    roi_dict = {}
+    for line in roi_info:
+        if not line[5] in roi_dict:
+            roi_dict[line[5]] = {}
+        i = int((90.0 - int(line[2])) / 2)
+        j = int((int(line[3]) + 126) / 2)
+        k = int((int(line[4]) + 72) / 2)
+        roi_dict[line[5]][int(line[0])] = [i, j, k]
+    # create cube roi based on center coord
+    for m in roi_dict:
+        centers = roi_dict[m]
+        mask = np.zeros((91, 109, 91))
+        for c in centers:
+            mask = niroi.cube_roi(mask, centers[c][0], centers[c][1],
+                                  centers[c][2], 2, c)
+        mni_vol = os.path.join(os.environ['FSL_DIR'], 'data', 'standard',
+                               'MNI152_T1_2mm_brain.nii.gz')
+        aff = nib.load(mni_vol).affine
+        outfile ='power264_%s_rois.nii.gz'%(m.replace('/','-').replace(' ','-'))
+        nibase.save2nifti(mask, aff, outfile)
 
 
 if __name__=='__main__':
