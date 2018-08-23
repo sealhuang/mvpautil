@@ -182,12 +182,22 @@ def svm_searchlight(root_dir, sid, test_run_idx):
     test_betas2 = nib.load(test_betas2_file).get_data()
     test_betas = np.concatenate((test_betas1, test_betas2), axis=3)
     # data normalization
-    m = np.mean(train_betas, axis=3, keepdims=True)
-    s = np.std(train_betas, axis=3, keepdims=True)
-    train_betas = (train_betas - m) / (s + 1e-5)
-    m = np.mean(test_betas, axis=3, keepdims=True)
-    s = np.std(test_betas, axis=3, keepdims=True)
-    test_betas = (test_betas - m) / (s + 1e-5)
+    #m = np.mean(train_betas, axis=3, keepdims=True)
+    #s = np.std(train_betas, axis=3, keepdims=True)
+    #train_betas = (train_betas - m) / (s + 1e-5)
+    #m = np.mean(test_betas, axis=3, keepdims=True)
+    #s = np.std(test_betas, axis=3, keepdims=True)
+    #test_betas = (test_betas - m) / (s + 1e-5)
+    for i in range(8):
+        tmp = train_betas[..., (i*80):(i*80+80)]
+        m = np.mean(tmp, axis=3, keepdims=True)
+        s = np.std(tmp, axis=3, keepdims=True)
+        train_betas[..., (i*80):(i*80+80)] = (tmp - m) / (s + 1e-5)
+    for i in range(2):
+        tmp = test_betas[..., (i*80):(i*80+80)]
+        m = np.mean(tmp, axis=3, keepdims=True)
+        s = np.std(tmp, axis=3, keepdims=True)
+        test_betas[..., (i*80):(i*80+80)] = (tmp - m) / (s + 1e-5)
 
     print train_betas.shape
     print test_betas.shape
@@ -673,12 +683,12 @@ if __name__=='__main__':
 
     # SVM-based searchlight
     #svm_searchlight(root_dir, 'S1', 1)
-    #svm_searchlight_cv(root_dir, 'S1')
+    svm_searchlight_cv(root_dir, 'S1')
     #random_svm_searchlight(root_dir, 'S1', 1000, 10)
     #get_searchlight_p(root_dir, 'S1')
     #fdr(root_dir, 'S1', alpha=0.05)
     #p2surf(root_dir, 'S1')
-    acc2mni(root_dir, 'S1')
+    #acc2mni(root_dir, 'S1')
 
     #roi_svm(root_dir, 'S1', 'face_roi_mprm.nii.gz')
 

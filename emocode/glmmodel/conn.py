@@ -220,25 +220,53 @@ def power264roi(root_dir):
     roi_info.pop(0)
     roi_info = [line.strip().split(',') for line in roi_info]
     roi_dict = {}
+    roi_label_dict = {}
     for line in roi_info:
         if not line[5] in roi_dict:
             roi_dict[line[5]] = {}
+            roi_label_dict[line[5]] = {}
         i = int((90.0 - int(line[2])) / 2)
         j = int((int(line[3]) + 126) / 2)
         k = int((int(line[4]) + 72) / 2)
         roi_dict[line[5]][int(line[0])] = [i, j, k]
+        roi_label_dict[line[5]][int(line[0])] = line[1]
+    
     # create cube roi based on center coord
-    for m in roi_dict:
+    #for m in roi_dict:
+    #    centers = roi_dict[m]
+    #    mask = np.zeros((91, 109, 91))
+    #    for c in centers:
+    #        mask = niroi.cube_roi(mask, centers[c][0], centers[c][1],
+    #                              centers[c][2], 2, c)
+    #    mni_vol = os.path.join(os.environ['FSL_DIR'], 'data', 'standard',
+    #                           'MNI152_T1_2mm_brain.nii.gz')
+    #    aff = nib.load(mni_vol).affine
+    #    outfile ='power264_%s_rois.nii.gz'%(m.replace('/','-').replace(' ','-'))
+    #    nibase.save2nifti(mask, aff, outfile)
+    
+    sel_module = ['Salience', 'Visual', 'Subcortical',
+                  'Cingulo-opercular Task Control', 'Default mode',
+                  'Fronto-parietal Task Control']
+    froi = open('sel_power227_roi.csv', 'w')
+    froi.write('RID,FSL_label,X,Y,Z,Module\n')
+    count = 1
+    mask = np.zeros((91, 109, 91))
+    for m in sel_module:
         centers = roi_dict[m]
-        mask = np.zeros((91, 109, 91))
+        labels = roi_label_dict[m]
         for c in centers:
             mask = niroi.cube_roi(mask, centers[c][0], centers[c][1],
-                                  centers[c][2], 2, c)
-        mni_vol = os.path.join(os.environ['FSL_DIR'], 'data', 'standard',
-                               'MNI152_T1_2mm_brain.nii.gz')
-        aff = nib.load(mni_vol).affine
-        outfile ='power264_%s_rois.nii.gz'%(m.replace('/','-').replace(' ','-'))
-        nibase.save2nifti(mask, aff, outfile)
+                                  centers[c][2], 2, count)
+            froi.write(','.join([str(count), labels[c], str(centers[c][0]),
+                                 str(centers[c][1]), str(centers[c][2]),
+                                 m])+'\n')
+            count += 1
+    froi.close()
+    mni_vol = os.path.join(os.environ['FSL_DIR'], 'data', 'standard',
+                           'MNI152_T1_2mm_brain.nii.gz')
+    aff = nib.load(mni_vol).affine
+    outfile ='sel_power227_rois.nii.gz'
+    nibase.save2nifti(mask, aff, outfile)
 
 
 if __name__=='__main__':

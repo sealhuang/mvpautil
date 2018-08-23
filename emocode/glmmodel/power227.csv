@@ -185,7 +185,6 @@ RID,FSL_Label,MNI-X,MNI-Y,MNI-Z,Suggested System
 124,parahipp_gyrus,-26,-40,-8,Default mode
 125,parahipp_gyrus,27,-37,-13,Default mode
 126,fusiform,-34,-38,-16,Default mode
-127,cerebellum,28,-77,-32,Default mode
 128,temporal_pole/MTG,52,7,-30,Default mode
 129,MTG,-53,3,-27,Default mode
 130,AG,47,-50,29,Default mode
