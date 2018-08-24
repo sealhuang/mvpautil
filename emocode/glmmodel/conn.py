@@ -164,6 +164,8 @@ def get_emo_std_ts(root_dir, sid, seq):
         roi_ts[:, :, (i*20):(i*20+20)] = run_roi_ts
     outfile = os.path.join(subj_dir, 'roi_std_ts.npy')
     np.save(outfile, roi_ts)
+    outfile = os.path.join(subj_dir, 'roi_std_ts.mat')
+    sio.savemat(outfile, {'roi_ts': roi_ts})
 
 def get_conn(root_dir, sid):
     """Get connectivity matrix."""
