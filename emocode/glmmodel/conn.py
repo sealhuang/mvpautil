@@ -133,8 +133,8 @@ def get_emo_std_ts(root_dir, sid, seq):
     subj_dir = os.path.join(root_dir, 'workshop', 'glmmodel', 'conn', sid)
 
     # load roi and betas
-    rois = nib.load(os.path.join(root_dir, 'group-level', 'rois', 'neurosynth',
-                    'merged_hfdn_mask_Tmax_s2_lmax_roi.nii.gz')).get_data()
+    rois = nib.load(os.path.join(root_dir, 'group-level', 'rois', 'power264',
+                    'power264_rois.nii.gz')).get_data()
     roi_num = int(rois.max())
     beta1_file = os.path.join(subj_dir, '%s_beta_s1_full_mni.nii.gz'%(sid))
     beta2_file = os.path.join(subj_dir, '%s_beta_s2_full_mni.nii.gz'%(sid))
@@ -162,9 +162,9 @@ def get_emo_std_ts(root_dir, sid, seq):
             for r in range(roi_num):
                 run_roi_ts[e, r] = niroi.extract_mean_ts(emo_beta, rois==(r+1))
         roi_ts[:, :, (i*20):(i*20+20)] = run_roi_ts
-    outfile = os.path.join(subj_dir, 'roi_std_ts.npy')
+    outfile = os.path.join(subj_dir, 'roi_std_ts_264.npy')
     np.save(outfile, roi_ts)
-    outfile = os.path.join(subj_dir, 'roi_std_ts.mat')
+    outfile = os.path.join(subj_dir, 'roi_std_ts_264.mat')
     sio.savemat(outfile, {'roi_ts': roi_ts})
 
 def get_conn(root_dir, sid):
@@ -278,6 +278,7 @@ def power264roi(root_dir):
                                  m])+'\n')
             count += 1
     froi.close()
+    mask[mask==1000] = 0
     mni_vol = os.path.join(os.environ['FSL_DIR'], 'data', 'standard',
                            'MNI152_T1_2mm_brain.nii.gz')
     aff = nib.load(mni_vol).affine
@@ -288,7 +289,7 @@ def power264roi(root_dir):
 if __name__=='__main__':
     root_dir = r'/nfs/diskstation/projects/emotionPro'
 
-    power264roi(root_dir)
+    #power264roi(root_dir)
 
     #refine_rois(root_dir)
     #func2mni(root_dir, 'S6')
