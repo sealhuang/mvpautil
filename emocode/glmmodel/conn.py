@@ -218,7 +218,7 @@ def get_rand_conn(root_dir, rand_num):
 
 def power264roi(root_dir):
     """Make ROI file based on Power264 atlas."""
-    roi_info = open('power227.csv').readlines()
+    roi_info = open('power264.csv').readlines()
     roi_info.pop(0)
     roi_info = [line.strip().split(',') for line in roi_info]
     roi_dict = {}
@@ -246,10 +246,11 @@ def power264roi(root_dir):
     #    outfile ='power264_%s_rois.nii.gz'%(m.replace('/','-').replace(' ','-'))
     #    nibase.save2nifti(mask, aff, outfile)
     
-    sel_module = ['Salience', 'Visual', 'Subcortical',
-                  'Cingulo-opercular Task Control', 'Default mode',
-                  'Fronto-parietal Task Control']
-    froi = open('sel_power227_roi.csv', 'w')
+    #sel_module = ['Salience', 'Visual', 'Subcortical',
+    #              'Cingulo-opercular Task Control', 'Default mode',
+    #              'Fronto-parietal Task Control']
+    sel_module = roi_dict.keys()
+    froi = open('power264_roi.csv', 'w')
     froi.write('RID,FSL_label,X,Y,Z,Module\n')
     count = 1
     mask = np.zeros((91, 109, 91))
@@ -257,8 +258,21 @@ def power264roi(root_dir):
         centers = roi_dict[m]
         labels = roi_label_dict[m]
         for c in centers:
-            mask = niroi.cube_roi(mask, centers[c][0], centers[c][1],
-                                  centers[c][2], 2, count)
+            x = centers[c][0]
+            y = centers[c][1]
+            z = centers[c][2]
+            for n_x in range(x-2, x+3):
+                for n_y in range(y-2, y+3):
+                    for n_z in range(z-2, z+3):
+                        try:
+                            if mask[n_x, n_y, n_z]>0:
+                                mask[n_x, n_y, n_z] = 1000
+                            else:
+                                mask[n_x, n_y, n_z] = count
+                        except:
+                            pass
+            #mask = niroi.cube_roi(mask, centers[c][0], centers[c][1],
+            #                      centers[c][2], 2, count)
             froi.write(','.join([str(count), labels[c], str(centers[c][0]),
                                  str(centers[c][1]), str(centers[c][2]),
                                  m])+'\n')
@@ -267,7 +281,7 @@ def power264roi(root_dir):
     mni_vol = os.path.join(os.environ['FSL_DIR'], 'data', 'standard',
                            'MNI152_T1_2mm_brain.nii.gz')
     aff = nib.load(mni_vol).affine
-    outfile ='sel_power227_rois.nii.gz'
+    outfile ='power264_rois.nii.gz'
     nibase.save2nifti(mask, aff, outfile)
 
 
