@@ -285,11 +285,41 @@ def power264roi(root_dir):
     outfile ='power264_rois.nii.gz'
     nibase.save2nifti(mask, aff, outfile)
 
+def gen_power_roi(root_dir):
+    """Make ROI file based on Power264 atlas."""
+    roi_info = open('power_rois.csv').readlines()
+    roi_info.pop(0)
+    roi_info = [line.strip().split(',') for line in roi_info]
+
+    mask = np.zeros((91, 109, 91))
+    for line in roi_info:
+        i = int((90.0 - float(line[3])) / 2)
+        j = int((float(line[4]) + 126) / 2)
+        k = int((float(line[5]) + 72) / 2)
+        label = int(line[1])
+        for n_x in range(i-2, i+3):
+            for n_y in range(j-2, j+3):
+                for n_z in range(k-2, k+3):
+                    try:
+                        if mask[n_x, n_y, n_z]>0:
+                            mask[n_x, n_y, n_z] = 1000
+                        else:
+                            mask[n_x, n_y, n_z] = label
+                    except:
+                        pass
+    mask[mask==1000] = 0
+    mni_vol = os.path.join(os.environ['FSL_DIR'], 'data', 'standard',
+                           'MNI152_T1_2mm_brain.nii.gz')
+    aff = nib.load(mni_vol).affine
+    outfile ='power_rois.nii.gz'
+    nibase.save2nifti(mask, aff, outfile)
+
 
 if __name__=='__main__':
     root_dir = r'/nfs/diskstation/projects/emotionPro'
 
     #power264roi(root_dir)
+    gen_power_roi(root_dir)
 
     #refine_rois(root_dir)
     #func2mni(root_dir, 'S6')
