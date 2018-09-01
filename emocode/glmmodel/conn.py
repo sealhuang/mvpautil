@@ -94,6 +94,49 @@ def func2mni(root_dir, sid):
                func2mni_mat, '-out', mni_beta_file]
     os.system(' '.join(str_cmd))
 
+def func2mni_cv(root_dir, sid):
+    """Convert functional data from original space into standard space."""
+    conn_dir = os.path.join(root_dir, 'workshop', 'glmmodel', 'conn')
+    subj_dir = os.path.join(conn_dir, sid)
+    if not os.path.exists(subj_dir):
+        os.system('mkdir %s'%(subj_dir))
+    
+    # affine matrix init
+    func2mni_mat = os.path.join(subj_dir, 'func2standard_2mm.mat')
+    
+    # convert func images
+    for r in range(1, 6):
+        mni_vol = os.path.join(os.environ['FSL_DIR'], 'data', 'standard',
+                               'MNI152_T1_2mm_brain.nii.gz')
+        beta_file = os.path.join(root_dir, 'workshop', 'glmmodel', 'betas',
+                                 sid, '%s_beta_train_s1_t%s.nii.gz'%(sid, r))
+        mni_beta_file = os.path.join(subj_dir,
+                                     '%s_beta_train_s1_t%s_mni.nii.gz'%(sid, r))
+        str_cmd = ['flirt', '-in', beta_file, '-ref', mni_vol,
+                   '-applyxfm', '-init', func2mni_mat, '-out', mni_beta_file]
+        os.system(' '.join(str_cmd))
+        beta_file = os.path.join(root_dir, 'workshop', 'glmmodel', 'betas',
+                                 sid, '%s_beta_train_s2_t%s.nii.gz'%(sid, r))
+        mni_beta_file = os.path.join(subj_dir,
+                                     '%s_beta_train_s2_t%s_mni.nii.gz'%(sid, r))
+        str_cmd = ['flirt', '-in', beta_file, '-ref', mni_vol,
+                   '-applyxfm', '-init', func2mni_mat, '-out', mni_beta_file]
+        os.system(' '.join(str_cmd))
+        beta_file = os.path.join(root_dir, 'workshop', 'glmmodel', 'betas',
+                                 sid, '%s_beta_val_s1_t%s.nii.gz'%(sid, r))
+        mni_beta_file = os.path.join(subj_dir,
+                                     '%s_beta_val_s1_t%s_mni.nii.gz'%(sid, r))
+        str_cmd = ['flirt', '-in', beta_file, '-ref', mni_vol,
+                   '-applyxfm', '-init', func2mni_mat, '-out', mni_beta_file]
+        os.system(' '.join(str_cmd))
+        beta_file = os.path.join(root_dir, 'workshop', 'glmmodel', 'betas',
+                                 sid, '%s_beta_val_s2_t%s.nii.gz'%(sid, r))
+        mni_beta_file = os.path.join(subj_dir,
+                                     '%s_beta_val_s2_t%s_mni.nii.gz'%(sid, r))
+        str_cmd = ['flirt', '-in', beta_file, '-ref', mni_vol,
+                   '-applyxfm', '-init', func2mni_mat, '-out', mni_beta_file]
+        os.system(' '.join(str_cmd))
+
 def get_emo_ts(root_dir, sid, seq):
     """Get neural activity time course of each roi on each emotion condition."""
     subj_dir = os.path.join(root_dir, 'workshop', 'glmmodel', 'conn', sid)
@@ -319,10 +362,11 @@ if __name__=='__main__':
     root_dir = r'/nfs/diskstation/projects/emotionPro'
 
     #power264roi(root_dir)
-    gen_power_roi(root_dir)
+    #gen_power_roi(root_dir)
 
     #refine_rois(root_dir)
     #func2mni(root_dir, 'S6')
+    func2mni_cv(root_dir, 'S1')
     #seq = get_emo_seq(root_dir, 'S7')
     #get_emo_ts(root_dir, 'S5', seq)
     #get_emo_std_ts(root_dir, 'S7', seq)

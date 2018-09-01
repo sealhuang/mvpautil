@@ -672,6 +672,79 @@ def acc2mni(root_dir, sid):
                highres2mni_mat, '-out', mni_acc_file]
     os.system(' '.join(str_cmd))
 
+def roi_clf(root_dir, sid):
+    """Get classification accuracy for each emotion-related ROI."""
+    # dir config
+    subj_dir = os.path.join(root_dir, 'workshop', 'glmmodel', 'conn', sid)
+    
+    # load mask file
+    mask_file = os.path.join(root_dir, 'group-level', 'rois', 'power264',
+                             'emotion_rois.nii.gz')
+    mask = nib.load(mask_file).get_data()
+    roi_num = mask.max()
+    acc_mtx = np.zeros((5, roi_num, 4))
+
+    # calculate classification accuracy
+    for r in range(1, 6):
+        #-- load estimated beta maps
+        print 'Load estimated beta maps from training datasets ...'
+        train_beta1_file = os.path.join(subj_dir,
+                                '%s_beta_train_s1_t%s_mni.nii.gz'%(sid, r))
+        train_beta2_file = os.path.join(subj_dir,
+                                '%s_beta_train_s2_t%s_mni.nii.gz'%(sid, r))
+        train_beta1 = nib.load(train_beta1_file).get_data()
+        train_beta2 = nib.load(train_beta2_file).get_data()
+        train_beta = np.concatenate((train_beta1, train_beta2), axis=3)
+        print 'Load estimated beta maps from testing datasets ...'
+        test_beta1_file = os.path.join(subj_dir,
+                                       '%s_beta_val_s1_t%s_mni.nii.gz'%(sid, r))
+        test_beta2_file = os.path.join(subj_dir,
+                                       '%s_beta_val_s2_t%s_mni.nii.gz'%(sid, r))
+        test_beta1 = nib.load(test_beta1_file).get_data()
+        test_beta2 = nib.load(test_beta2_file).get_data()
+        test_beta = np.concatenate((test_beta1, test_beta2), axis=3)
+        # data normalization
+        for i in range(8):
+            tmp = train_beta[..., (i*80):(i*80+80)]
+            m = np.mean(tmp, axis=3, keepdims=True)
+            s = np.std(tmp, axis=3, keepdims=True)
+            train_beta[..., (i*80):(i*80+80)] = (tmp - m) / (s + 1e-5)
+        for i in range(2):
+            tmp = test_beta[..., (i*80):(i*80+80)]
+            m = np.mean(tmp, axis=3, keepdims=True)
+            s = np.std(tmp, axis=3, keepdims=True)
+            test_beta[..., (i*80):(i*80+80)] = (tmp - m) / (s + 1e-5)
+        print train_beta.shape
+        print test_beta.shape
+ 
+        # for loop for roi-wise classification
+        for c in range(roi_num):
+            roi_idx = c + 1
+            cube_coord = niroi.get_roi_coord(mask==roi_idx)
+            train_x = []
+            test_x = []
+            for t in range(train_betas.shape[3]):
+                vtr = niroi.get_voxel_value(cube_coord, train_betas[..., t])
+                train_x.append(vtr.tolist())
+            for t in range(test_betas.shape[3]):
+                vtr = niroi.get_voxel_value(cube_coord, test_betas[..., t])
+                test_x.append(vtr.tolist())
+            train_x = np.array(train_x)
+            test_x = np.array(test_x)
+            # classifier
+            # kernel can be specified as linear, poly, rbf, and sigmod
+            kernel = 'rbf'
+            clf = svm.SVC(kernel=kernel)
+            clf.fit(train_x, train_label)
+            pred = clf.predict(test_x)
+            for e in range(4):
+                acc = np.sum(pred[test_label==(e+1)]==(e+1))*1.0 / np.sum(test_label==(e+1))
+                print acc
+                acc_mtx[r-1, c, e] = acc
+    
+    # save data
+    np.save('%s_roi_clf_acc.npy'%(sid), acc_mtx)
+
 
 if __name__=='__main__':
     root_dir = r'/nfs/diskstation/projects/emotionPro'
@@ -683,7 +756,7 @@ if __name__=='__main__':
 
     # SVM-based searchlight
     #svm_searchlight(root_dir, 'S1', 1)
-    svm_searchlight_cv(root_dir, 'S1')
+    #svm_searchlight_cv(root_dir, 'S1')
     #random_svm_searchlight(root_dir, 'S1', 1000, 10)
     #get_searchlight_p(root_dir, 'S1')
     #fdr(root_dir, 'S1', alpha=0.05)
@@ -691,4 +764,5 @@ if __name__=='__main__':
     #acc2mni(root_dir, 'S1')
 
     #roi_svm(root_dir, 'S1', 'face_roi_mprm.nii.gz')
+    roi_clf(root_dir, 'S1')
 
