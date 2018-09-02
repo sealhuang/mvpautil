@@ -521,21 +521,7 @@ def get_searchlight_p(root_dir, sid):
     work_dir = os.path.join(root_dir, 'workshop', 'glmmodel', 'searchlight')
     subj_dir = os.path.join(work_dir, sid)
 
-    print 'Calculate mean classification accuracy across CVs ...'
-    # get cv results
-    cv_files = [os.path.join(subj_dir, 'svm_rbf_t%s.nii.gz'%(i+1))
-                for i in range(5)]
-    cv_hr_files = [os.path.join(subj_dir, 'svm_rbf_t%s_highres.nii.gz'%(i+1))
-                   for i in range(5)]
     cv_mean_file = os.path.join(subj_dir, 'svm_rbf_tmean.nii.gz')
-    cv_hr_mean_file = os.path.join(subj_dir, 'svm_rbf_tmean_highres.nii.gz')
-    # calculate mean accuracy
-    cmd_str = ' '.join(['fslmaths'] + [' -add '.join(cv_files)] + \
-                       ['-div', '5', cv_mean_file])
-    os.system(cmd_str)
-    cmd_str = ' '.join(['fslmaths'] + [' -add '.join(cv_hr_files)] + \
-                       ['-div', '5', cv_hr_mean_file])
-    os.system(cmd_str)
 
     print 'Calculate mean classification accuracy across radnom CVs ...'
     # calculate mean accuracy for each emotion condition
