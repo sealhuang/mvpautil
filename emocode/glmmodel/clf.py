@@ -265,6 +265,36 @@ def svm_searchlight_cv(root_dir, sid):
     """SVM based searchlight analysis in a cross-validation approach."""
     for r in range(1, 6):
         svm_searchlight(root_dir, sid, r)
+    
+    # calculate mean classification accuracy across folds
+    work_dir = os.path.join(root_dir, 'workshop', 'glmmodel', 'searchlight')
+    subj_dir = os.path.join(work_dir, sid)
+
+    print 'Calculate mean classification accuracy across CVs ...'
+    # get cv results
+    cv_files = [os.path.join(subj_dir, 'svm_rbf_t%s.nii.gz'%(i+1))
+                for i in range(5)]
+    cv_hr_files = [os.path.join(subj_dir, 'svm_rbf_t%s_highres.nii.gz'%(i+1))
+                   for i in range(5)]
+    cv_mean_file = os.path.join(subj_dir, 'svm_rbf_tmean.nii.gz')
+    cv_hr_mean_file = os.path.join(subj_dir, 'svm_rbf_tmean_highres.nii.gz')
+    # calculate mean accuracy
+    cmd_str = ' '.join(['fslmaths'] + [' -add '.join(cv_files)] + \
+                       ['-div', '5', cv_mean_file])
+    os.system(cmd_str)
+    cmd_str = ' '.join(['fslmaths'] + [' -add '.join(cv_hr_files)] + \
+                       ['-div', '5', cv_hr_mean_file])
+    os.system(cmd_str)
+    
+    # highres acc file to mni space
+    highres2mni_mat = os.path.join(root_dir, 'nii', sid+'P1', '3danat',
+                                   'reg_fsl', 'highres2standard_2mm.mat')
+    mni_vol = os.path.join(os.environ['FSL_DIR'], 'data', 'standard',
+                           'MNI152_T1_2mm_brain.nii.gz')
+    mni_acc_file = os.path.join(subj_dir, 'svm_rbf_tmean_mni_linear.nii.gz')
+    str_cmd = ['flirt', '-in', cv_hr_mean_file, '-ref', mni_vol,
+               '-applyxfm', '-init', highres2mni_mat, '-out', mni_acc_file]
+    os.system(' '.join(str_cmd))
 
 def initpool(clf_result_e1, clf_result_e2, clf_result_e3, clf_result_e4):
     """Initializer for process pool."""
@@ -657,20 +687,20 @@ def p2surf(root_dir, sid):
                        '--hemi', h, '--o', surf_file]
             os.system(' '.join(str_cmd))
 
-def acc2mni(root_dir, sid):
-    """Convert classification results to MNI standard space."""
-    work_dir = os.path.join(root_dir, 'workshop', 'glmmodel', 'searchlight')
-    subj_dir = os.path.join(work_dir, sid)
-
-    acc_file = os.path.join(subj_dir, 'svm_rbf_tmean_highres.nii.gz')
-    highres2mni_mat = os.path.join(root_dir, 'nii', sid+'P1', '3danat',
-                                   'reg_fsl', 'highres2standard_2mm.mat')
-    mni_vol = os.path.join(os.environ['FSL_DIR'], 'data', 'standard',
-                           'MNI152_T1_2mm_brain.nii.gz')
-    mni_acc_file = os.path.join(subj_dir, 'svm_rbf_tmean_mni_linear.nii.gz')
-    str_cmd = ['flirt', '-in', acc_file, '-ref', mni_vol, '-applyxfm', '-init',
-               highres2mni_mat, '-out', mni_acc_file]
-    os.system(' '.join(str_cmd))
+#def acc2mni(root_dir, sid):
+#    """Convert classification results to MNI standard space."""
+#    work_dir = os.path.join(root_dir, 'workshop', 'glmmodel', 'searchlight')
+#    subj_dir = os.path.join(work_dir, sid)
+#
+#    acc_file = os.path.join(subj_dir, 'svm_rbf_tmean_highres.nii.gz')
+#    highres2mni_mat = os.path.join(root_dir, 'nii', sid+'P1', '3danat',
+#                                   'reg_fsl', 'highres2standard_2mm.mat')
+#    mni_vol = os.path.join(os.environ['FSL_DIR'], 'data', 'standard',
+#                           'MNI152_T1_2mm_brain.nii.gz')
+#    mni_acc_file = os.path.join(subj_dir, 'svm_rbf_tmean_mni_linear.nii.gz')
+#    str_cmd = ['flirt', '-in', acc_file, '-ref', mni_vol, '-applyxfm', '-init',
+#               highres2mni_mat, '-out', mni_acc_file]
+#    os.system(' '.join(str_cmd))
 
 def roi_clf(root_dir, sid):
     """Get classification accuracy for each emotion-related ROI."""
@@ -767,13 +797,12 @@ if __name__=='__main__':
 
     # SVM-based searchlight
     #svm_searchlight(root_dir, 'S1', 1)
-    #svm_searchlight_cv(root_dir, 'S1')
+    svm_searchlight_cv(root_dir, 'S1')
     #random_svm_searchlight(root_dir, 'S1', 1000, 10)
     #get_searchlight_p(root_dir, 'S1')
     #fdr(root_dir, 'S1', alpha=0.05)
     #p2surf(root_dir, 'S1')
-    #acc2mni(root_dir, 'S1')
 
     #roi_svm(root_dir, 'S1', 'face_roi_mprm.nii.gz')
-    roi_clf(root_dir, 'S1')
+    #roi_clf(root_dir, 'S1')
 
