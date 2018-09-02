@@ -681,7 +681,7 @@ def roi_clf(root_dir, sid):
     mask_file = os.path.join(root_dir, 'group-level', 'rois', 'power264',
                              'emotion_rois.nii.gz')
     mask = nib.load(mask_file).get_data()
-    roi_num = mask.max()
+    roi_num = int(mask.max())
     acc_mtx = np.zeros((5, roi_num, 4))
 
     # calculate classification accuracy
@@ -717,17 +717,28 @@ def roi_clf(root_dir, sid):
         print train_beta.shape
         print test_beta.shape
  
+        # get stimuli label info
+        print 'Load stimuli label info ...'
+        stim_label_list = get_stimuli_label(root_dir, sid)
+        test_label = np.concatenate((stim_label_list[r-1],
+                                     stim_label_list[5+r-1]))
+        stim_label_list.pop(r-1)
+        stim_label_list.pop(5+r-2)
+        train_label = np.concatenate(tuple(item for item in stim_label_list))
+        print train_label.shape
+        print test_label.shape
+        
         # for loop for roi-wise classification
         for c in range(roi_num):
             roi_idx = c + 1
             cube_coord = niroi.get_roi_coord(mask==roi_idx)
             train_x = []
             test_x = []
-            for t in range(train_betas.shape[3]):
-                vtr = niroi.get_voxel_value(cube_coord, train_betas[..., t])
+            for t in range(train_beta.shape[3]):
+                vtr = niroi.get_voxel_value(cube_coord, train_beta[..., t])
                 train_x.append(vtr.tolist())
-            for t in range(test_betas.shape[3]):
-                vtr = niroi.get_voxel_value(cube_coord, test_betas[..., t])
+            for t in range(test_beta.shape[3]):
+                vtr = niroi.get_voxel_value(cube_coord, test_beta[..., t])
                 test_x.append(vtr.tolist())
             train_x = np.array(train_x)
             test_x = np.array(test_x)
