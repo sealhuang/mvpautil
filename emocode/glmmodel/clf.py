@@ -850,9 +850,10 @@ def random_roi_clf(root_dir, sid, test_run_idx, rand_num):
     # get stimuli label info
     print 'Load stimuli label info ...'
     stim_label_list = get_stimuli_label(root_dir, sid)
-    test_label = np.concatenate((stim_label_list[r-1], stim_label_list[5+r-1]))
-    stim_label_list.pop(r-1)
-    stim_label_list.pop(5+r-2)
+    test_label = np.concatenate((stim_label_list[test_run_idx-1],
+                                 stim_label_list[5+test_run_idx-1]))
+    stim_label_list.pop(test_run_idx-1)
+    stim_label_list.pop(5+test_run_idx-2)
     train_label = np.concatenate(tuple(item for item in stim_label_list))
 
     # for loop for randomization
