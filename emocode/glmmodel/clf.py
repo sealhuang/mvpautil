@@ -812,7 +812,7 @@ def random_roi_clf(root_dir, sid, test_run_idx, rand_num):
     print 'Load mask data ...'
     mask_file = os.path.join(root_dir, 'group-level', 'rois', 'power264',
                              'emotion_rois.nii.gz')
-    mask_data = nib.load(mask_file).get_data()
+    mask = nib.load(mask_file).get_data()
     roi_num = int(mask.max())
     acc_mtx = np.zeros((rand_num, roi_num, 6))
 
