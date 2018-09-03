@@ -683,11 +683,11 @@ def roi_clf(root_dir, sid):
                              'emotion_rois.nii.gz')
     mask = nib.load(mask_file).get_data()
     roi_num = int(mask.max())
-    acc_mtx = np.zeros((5, roi_num, 4))
+    acc_mtx = np.zeros((5, roi_num, 6))
 
     # calculate classification accuracy
     for r in range(1, 6):
-        #-- load estimated beta maps
+        # load estimated beta maps
         print 'Load estimated beta maps from training datasets ...'
         train_beta1_file = os.path.join(subj_dir,
                                 '%s_beta_train_s1_t%s_mni.nii.gz'%(sid, r))
@@ -726,33 +726,78 @@ def roi_clf(root_dir, sid):
         stim_label_list.pop(r-1)
         stim_label_list.pop(5+r-2)
         train_label = np.concatenate(tuple(item for item in stim_label_list))
-        print train_label.shape
-        print test_label.shape
+        #print train_label.shape
+        #print test_label.shape
         
         # for loop for roi-wise classification
         for c in range(roi_num):
             roi_idx = c + 1
             cube_coord = niroi.get_roi_coord(mask==roi_idx)
-            train_x = []
-            test_x = []
-            for t in range(train_beta.shape[3]):
-                vtr = niroi.get_voxel_value(cube_coord, train_beta[..., t])
-                train_x.append(vtr.tolist())
-            for t in range(test_beta.shape[3]):
-                vtr = niroi.get_voxel_value(cube_coord, test_beta[..., t])
-                test_x.append(vtr.tolist())
-            train_x = np.array(train_x)
-            test_x = np.array(test_x)
-            # classifier
-            # kernel can be specified as linear, poly, rbf, and sigmod
-            kernel = 'rbf'
-            clf = svm.SVC(kernel=kernel)
-            clf.fit(train_x, train_label)
-            pred = clf.predict(test_x)
-            for e in range(4):
-                acc = np.sum(pred[test_label==(e+1)]==(e+1))*1.0 / np.sum(test_label==(e+1))
-                print acc
-                acc_mtx[r-1, c, e] = acc
+            
+            e = 0
+            for e1 in range(1, 5):
+                for e2 in range(e1+1, 5):
+                    print '%s VS. %s ...'%(e1, e2)
+                    train_x = []
+                    test_x = []
+                    train_smp_idx = [t for t in range(train_beta.shape[3])
+                                if (train_label[t]==e1 or train_label[t]==e2)]
+                    test_smp_idx = [t for t in range(test_beta.shape[3])
+                                    if (test_label[t]==e1 or test_label[t]==e2)]
+                    for t in train_smp_idx:
+                        vtr = niroi.get_voxel_value(cube_coord,
+                                                    train_beta[..., t])
+                        train_x.append(vtr.tolist())
+                    for t in test_smp_idx:
+                        vtr = niroi.get_voxel_value(cube_coord,
+                                                    test_beta[..., t])
+                        test_x.append(vtr.tolist())
+                    train_x = np.array(train_x)
+                    test_x = np.array(test_x)
+                    train_y = train_label[train_smp_idx]
+                    test_y = test_label[test_smp_idx]
+                    train_y[train_y>e1] = 0
+                    train_y[train_y>0] = 1
+                    test_y = test_label[test_smp_idx]
+                    test_y[test_y>e1] = 0
+                    test_y[test_y>0] = 1
+                    print train_x.shape
+                    print test_x.shape
+                    print train_y.shape
+                    print test_y.shape
+                    
+                    # classifier
+                    # kernel can be specified as linear, poly, rbf, and sigmod
+                    kernel = 'rbf'
+                    clf = svm.SVC(kernel=kernel)
+                    clf.fit(train_x, train_y)
+                    pred = clf.predict(test_x)
+                    acc = np.sum(pred==test_y)*1.0 / test_y.shape[0]
+                    print acc
+                    acc_mtx[r-1, c, e] = acc
+                    e = e + 1
+                    print '---------------------'
+
+            #train_x = []
+            #test_x = []
+            #for t in range(train_beta.shape[3]):
+            #    vtr = niroi.get_voxel_value(cube_coord, train_beta[..., t])
+            #    train_x.append(vtr.tolist())
+            #for t in range(test_beta.shape[3]):
+            #    vtr = niroi.get_voxel_value(cube_coord, test_beta[..., t])
+            #    test_x.append(vtr.tolist())
+            #train_x = np.array(train_x)
+            #test_x = np.array(test_x)
+            ## classifier
+            ## kernel can be specified as linear, poly, rbf, and sigmod
+            #kernel = 'rbf'
+            #clf = svm.SVC(kernel=kernel)
+            #clf.fit(train_x, train_label)
+            #pred = clf.predict(test_x)
+            #for e in range(4):
+            #    acc = np.sum(pred[test_label==(e+1)]==(e+1))*1.0 / np.sum(test_label==(e+1))
+            #    print acc
+            #    acc_mtx[r-1, c, e] = acc
     
     # save data
     np.save('%s_roi_clf_acc.npy'%(sid), acc_mtx)
@@ -768,12 +813,12 @@ if __name__=='__main__':
 
     # SVM-based searchlight
     #svm_searchlight(root_dir, 'S1', 1)
-    svm_searchlight_cv(root_dir, 'S1')
+    #svm_searchlight_cv(root_dir, 'S1')
     #random_svm_searchlight(root_dir, 'S1', 1000, 10)
     #get_searchlight_p(root_dir, 'S1')
     #fdr(root_dir, 'S1', alpha=0.05)
     #p2surf(root_dir, 'S1')
 
     #roi_svm(root_dir, 'S1', 'face_roi_mprm.nii.gz')
-    #roi_clf(root_dir, 'S1')
+    roi_clf(root_dir, 'S1')
 
