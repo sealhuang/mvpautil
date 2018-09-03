@@ -802,6 +802,116 @@ def roi_clf(root_dir, sid):
     # save data
     np.save('%s_roi_clf_acc.npy'%(sid), acc_mtx)
 
+def random_roi_clf(root_dir, sid, test_run_idx, rand_num):
+    """Generate a NULL distribution for roi-based roi analysis."""
+    print 'ROI analysis on Subject %s - test run %s'%(sid, test_run_idx)
+    #-- dir config
+    subj_dir = os.path.join(root_dir, 'workshop', 'glmmodel', 'conn', sid)
+    
+    #-- read mask file
+    print 'Load mask data ...'
+    mask_file = os.path.join(root_dir, 'group-level', 'rois', 'power264',
+                             'emotion_rois.nii.gz')
+    mask_data = nib.load(mask_file).get_data()
+    roi_num = int(mask.max())
+    acc_mtx = np.zeros((rand_num, roi_num, 6))
+
+    # load estimated beta maps
+    print 'Load estimated beta maps from training datasets ...'
+    train_beta1_file = os.path.join(subj_dir,
+                        '%s_beta_train_s1_t%s_mni.nii.gz'%(sid, test_run_idx))
+    train_beta2_file = os.path.join(subj_dir,
+                        '%s_beta_train_s2_t%s_mni.nii.gz'%(sid, test_run_idx))
+    train_beta1 = nib.load(train_beta1_file).get_data()
+    train_beta2 = nib.load(train_beta2_file).get_data()
+    train_beta = np.concatenate((train_beta1, train_beta2), axis=3)
+    print 'Load estimated beta maps from testing datasets ...'
+    test_beta1_file = os.path.join(subj_dir,
+                        '%s_beta_val_s1_t%s_mni.nii.gz'%(sid, test_run_idx))
+    test_beta2_file = os.path.join(subj_dir,
+                        '%s_beta_val_s2_t%s_mni.nii.gz'%(sid, test_run_idx))
+    test_beta1 = nib.load(test_beta1_file).get_data()
+    test_beta2 = nib.load(test_beta2_file).get_data()
+    test_beta = np.concatenate((test_beta1, test_beta2), axis=3)
+    # data normalization
+    for i in range(8):
+        tmp = train_beta[..., (i*80):(i*80+80)]
+        m = np.mean(tmp, axis=3, keepdims=True)
+        s = np.std(tmp, axis=3, keepdims=True)
+        train_beta[..., (i*80):(i*80+80)] = (tmp - m) / (s + 1e-5)
+    for i in range(2):
+        tmp = test_beta[..., (i*80):(i*80+80)]
+        m = np.mean(tmp, axis=3, keepdims=True)
+        s = np.std(tmp, axis=3, keepdims=True)
+        test_beta[..., (i*80):(i*80+80)] = (tmp - m) / (s + 1e-5)
+    print train_beta.shape
+    print test_beta.shape
+ 
+    # get stimuli label info
+    print 'Load stimuli label info ...'
+    stim_label_list = get_stimuli_label(root_dir, sid)
+    test_label = np.concatenate((stim_label_list[r-1], stim_label_list[5+r-1]))
+    stim_label_list.pop(r-1)
+    stim_label_list.pop(5+r-2)
+    train_label = np.concatenate(tuple(item for item in stim_label_list))
+
+    # for loop for randomization
+    for r in range(rand_num):
+        rand_train_label = train_label[np.random.permutation(train_label.shape[0])]
+        rand_test_label = test_label[np.random.permutation(test_label.shape[0])]
+
+        # for loop for roi-wise classification
+        for c in range(roi_num):
+            roi_idx = c + 1
+            cube_coord = niroi.get_roi_coord(mask==roi_idx)
+            
+            e = 0
+            for e1 in range(1, 5):
+                for e2 in range(e1+1, 5):
+                    print '%s VS. %s ...'%(e1, e2)
+                    train_x = []
+                    test_x = []
+                    train_smp_idx = [t for t in range(train_beta.shape[3])
+                        if (rand_train_label[t]==e1 or rand_train_label[t]==e2)]
+                    test_smp_idx = [t for t in range(test_beta.shape[3])
+                        if (rand_test_label[t]==e1 or rand_test_label[t]==e2)]
+                    for t in train_smp_idx:
+                        vtr = niroi.get_voxel_value(cube_coord,
+                                                    train_beta[..., t])
+                        train_x.append(vtr.tolist())
+                    for t in test_smp_idx:
+                        vtr = niroi.get_voxel_value(cube_coord,
+                                                    test_beta[..., t])
+                        test_x.append(vtr.tolist())
+                    train_x = np.array(train_x)
+                    test_x = np.array(test_x)
+                    train_y = train_label[train_smp_idx]
+                    test_y = test_label[test_smp_idx]
+                    train_y[train_y>e1] = 0
+                    train_y[train_y>0] = 1
+                    test_y = test_label[test_smp_idx]
+                    test_y[test_y>e1] = 0
+                    test_y[test_y>0] = 1
+                    print train_x.shape
+                    print test_x.shape
+                    print train_y.shape
+                    print test_y.shape
+                    
+                    # classifier
+                    # kernel can be specified as linear, poly, rbf, and sigmod
+                    kernel = 'rbf'
+                    clf = svm.SVC(kernel=kernel)
+                    clf.fit(train_x, train_y)
+                    pred = clf.predict(test_x)
+                    acc = np.sum(pred==test_y)*1.0 / test_y.shape[0]
+                    print acc
+                    acc_mtx[r, c, e] = acc
+                    e = e + 1
+                    print '---------------------'
+    # save data
+    np.save('%s_roi_clf_rand_acc_t%s.npy'%(sid, test_run_idx), acc_mtx)
+
+
 
 if __name__=='__main__':
     root_dir = r'/nfs/diskstation/projects/emotionPro'
@@ -820,5 +930,6 @@ if __name__=='__main__':
     #p2surf(root_dir, 'S1')
 
     #roi_svm(root_dir, 'S1', 'face_roi_mprm.nii.gz')
-    roi_clf(root_dir, 'S1')
+    #roi_clf(root_dir, 'S1')
+    random_roi_clf(root_dir, 'S1', 1, 1000)
 
