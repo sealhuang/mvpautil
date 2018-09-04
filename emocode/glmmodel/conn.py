@@ -33,8 +33,14 @@ def refine_rois(root_dir):
     aff = nib.load(orig_roi_file).affine
     nibase.save2nifti(new_roi, aff, new_roi_file)
 
-def get_emo_seq(root_dir, sid):
-    """Get trial indexes for each emotion condition for each run."""
+def get_emo_seq(root_dir, sid, mode='objective'):
+    """Get trial indexes for each emotion condition for each run.
+    
+    mode options; `objective`  ->  image label
+                  `subjective` ->  subject's response, 0 indicates non-response
+                                   trials
+                  `correct`    ->  correct trial, 0 indicates wrong response
+    """
     beh_dir = os.path.join(root_dir, 'beh')
     # get subject name
     subj_name = {'S1': 'liqing', 'S2': 'zhangjipeng', 'S3': 'zhangdan',
@@ -55,7 +61,19 @@ def get_emo_seq(root_dir, sid):
         for line in record_info:
             if not line[0] in img_list:
                 img_list.append(line[0])
-                stim_label.append(int(line[1]))
+                if mode=='objective':
+                    stim_label.append(int(line[1]))
+                elif mode=='subjective':
+                    if line[2]=='NaN':
+                        stim_label.append(0)
+                    else:
+                        stim_label.append(int(line[2]))
+                elif mode=='correct':
+                    if line[1]==line[2]:
+                        stim_label.append(int(line[1]))
+                    else:
+                        stim_label.append(0)
+
         # get trial indexes for each emotion type
         trial_idx = []
         for e in range(4):
@@ -185,7 +203,8 @@ def get_emo_std_ts(root_dir, sid, seq):
     beta2 = nib.load(beta2_file).get_data()
 
     # get roi time course for each emotion type
-    roi_ts = np.zeros((4, roi_num, 200))
+    roi_ts = [np.array([]), np.array([]), np.array([]), np.array([])]
+    #roi_ts = np.zeros((4, roi_num, 200))
     for i in range(10):
         if i<5:
             run_beta = beta1[..., (i*80):(i*80+80)]
@@ -197,18 +216,25 @@ def get_emo_std_ts(root_dir, sid, seq):
         s = np.std(run_beta, axis=3, keepdims=True)
         run_beta = (run_beta - m) / (s + 1e-5)
         # get trial sequence for each emotion
-        run_roi_ts = np.zeros((4, roi_num, 20))
+        #run_roi_ts = np.zeros((4, roi_num, 20))
         for e in range(4):
             emo_seq = seq[i][e]
             emo_beta = run_beta[..., emo_seq]
+            run_roi_ts = np.zeros((roi_num, len(emo_seq)))
             # get time course for each roi
             for r in range(roi_num):
-                run_roi_ts[e, r] = niroi.extract_mean_ts(emo_beta, rois==(r+1))
-        roi_ts[:, :, (i*20):(i*20+20)] = run_roi_ts
-    outfile = os.path.join(subj_dir, 'roi_std_ts_264.npy')
-    np.save(outfile, roi_ts)
-    outfile = os.path.join(subj_dir, 'roi_std_ts_264.mat')
-    sio.savemat(outfile, {'roi_ts': roi_ts})
+                run_roi_ts[r] = niroi.extract_mean_ts(emo_beta, rois==(r+1))
+            if roi_ts[e].ndim>1:
+                roi_ts[e] = np.concatenate((roi_ts[e], run_roi_ts), axis=1)
+            else:
+                roi_ts[e] = run_roi_ts
+        #roi_ts[:, :, (i*20):(i*20+20)] = run_roi_ts
+    outfile = os.path.join(subj_dir, 'roi_std_ts_227')
+    np.savez(outfile, roits_emo1=roi_ts[0], roits_emo2=roi_ts[1],
+                      roits_emo3=roi_ts[2], roits_emo4=roi_ts[3])
+    outfile = os.path.join(subj_dir, 'roi_std_ts_227.mat')
+    sio.savemat(outfile, {'roits_emo1': roi_ts[0], 'roits_emo2': roi_ts[1],
+                          'roits_emo3': roi_ts[2], 'roits_emo4': roi_ts[3]})
 
 def get_conn(root_dir, sid):
     """Get connectivity matrix."""
@@ -366,10 +392,10 @@ if __name__=='__main__':
 
     #refine_rois(root_dir)
     #func2mni(root_dir, 'S6')
-    func2mni_cv(root_dir, 'S1')
-    #seq = get_emo_seq(root_dir, 'S7')
+    #func2mni_cv(root_dir, 'S1')
+    seq = get_emo_seq(root_dir, 'S1', mode='subjective')
     #get_emo_ts(root_dir, 'S5', seq)
-    #get_emo_std_ts(root_dir, 'S7', seq)
+    get_emo_std_ts(root_dir, 'S1', seq)
     #get_conn(root_dir, 'S7')
     #get_rand_conn(root_dir, 1000)
 

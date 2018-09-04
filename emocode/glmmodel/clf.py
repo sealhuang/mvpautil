@@ -31,8 +31,14 @@ def gen_func_mask(root_dir, sid):
     print ' '.join(cmd_str)
     os.system(' '.join(cmd_str))
 
-def get_stimuli_label(root_dir, sid):
-    """Get subject's trial tag for each run."""
+def get_stimuli_label(root_dir, sid, mode='objective'):
+    """Get subject's trial tag for each run.
+
+    mode options: `objective`  ->  image label
+                  `subjective` ->  subject's response, 0 indicates non-response
+                                   trials
+                  `correct`    ->  correct trial, 0 indicates wrong response
+    """
     beh_dir = os.path.join(root_dir, 'beh')
     # get subject name
     subj_name = {'S1': 'liqing', 'S2': 'zhangjipeng', 'S3': 'zhangdan',
@@ -52,7 +58,18 @@ def get_stimuli_label(root_dir, sid):
         for line in record_info:
             if not line[0] in img_list:
                 img_list.append(line[0])
-                stim_label.append(int(line[1]))
+                if mode=='objective':
+                    stim_label.append(int(line[1]))
+                elif mode=='subjective':
+                    if line[2]=='NaN':
+                        stim_label.append(0)
+                    else:
+                        stim_label.append(int(line[2]))
+                elif mode=='correct':
+                    if line[1]==line[2]:
+                        stim_label.append(int(line[1]))
+                    else:
+                        stim_label.append(0)
         stim_label_list.append(stim_label)
     return stim_label_list
 
@@ -720,7 +737,7 @@ def roi_clf(root_dir, sid):
  
         # get stimuli label info
         print 'Load stimuli label info ...'
-        stim_label_list = get_stimuli_label(root_dir, sid)
+        stim_label_list = get_stimuli_label(root_dir, sid, mode='subjective')
         test_label = np.concatenate((stim_label_list[r-1],
                                      stim_label_list[5+r-1]))
         stim_label_list.pop(r-1)
@@ -913,7 +930,6 @@ def random_roi_clf(root_dir, sid, test_run_idx, rand_num):
     np.save('%s_roi_clf_rand_acc_t%s.npy'%(sid, test_run_idx), acc_mtx)
 
 
-
 if __name__=='__main__':
     root_dir = r'/nfs/diskstation/projects/emotionPro'
 
@@ -931,6 +947,6 @@ if __name__=='__main__':
     #p2surf(root_dir, 'S1')
 
     #roi_svm(root_dir, 'S1', 'face_roi_mprm.nii.gz')
-    #roi_clf(root_dir, 'S1')
-    random_roi_clf(root_dir, 'S1', 1, 1000)
+    roi_clf(root_dir, 'S1')
+    #random_roi_clf(root_dir, 'S1', 1, 1000)
 
