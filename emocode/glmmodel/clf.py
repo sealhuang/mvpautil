@@ -697,7 +697,7 @@ def roi_clf(root_dir, sid):
     
     # load mask file
     mask_file = os.path.join(root_dir, 'group-level', 'rois', 'power264',
-                             'emotion_rois.nii.gz')
+                             'sel_emotion_rois.nii.gz')
     mask = nib.load(mask_file).get_data()
     roi_num = int(mask.max())
     acc_mtx = np.zeros((5, roi_num, 6))
@@ -822,13 +822,13 @@ def roi_clf(root_dir, sid):
 def random_roi_clf(root_dir, sid, test_run_idx, rand_num):
     """Generate a NULL distribution for roi-based roi analysis."""
     print 'ROI analysis on Subject %s - test run %s'%(sid, test_run_idx)
-    #-- dir config
+    # dir config
     subj_dir = os.path.join(root_dir, 'workshop', 'glmmodel', 'conn', sid)
     
-    #-- read mask file
+    # read mask file
     print 'Load mask data ...'
     mask_file = os.path.join(root_dir, 'group-level', 'rois', 'power264',
-                             'emotion_rois.nii.gz')
+                             'sel_emotion_rois.nii.gz')
     mask = nib.load(mask_file).get_data()
     roi_num = int(mask.max())
     acc_mtx = np.zeros((rand_num, roi_num, 6))
@@ -903,11 +903,11 @@ def random_roi_clf(root_dir, sid, test_run_idx, rand_num):
                         test_x.append(vtr.tolist())
                     train_x = np.array(train_x)
                     test_x = np.array(test_x)
-                    train_y = train_label[train_smp_idx]
-                    test_y = test_label[test_smp_idx]
+                    train_y = rand_train_label[train_smp_idx]
+                    test_y = rand_test_label[test_smp_idx]
                     train_y[train_y>e1] = 0
                     train_y[train_y>0] = 1
-                    test_y = test_label[test_smp_idx]
+                    test_y = rand_test_label[test_smp_idx]
                     test_y[test_y>e1] = 0
                     test_y[test_y>0] = 1
                     print train_x.shape
