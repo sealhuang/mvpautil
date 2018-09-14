@@ -929,6 +929,38 @@ def random_roi_clf(root_dir, sid, test_run_idx, rand_num):
     # save data
     np.save('%s_roi_clf_rand_acc_t%s.npy'%(sid, test_run_idx), acc_mtx)
 
+def get_roi_clf_p(root_dir, sid=None):
+    """Get p value of roi-based classification."""
+    if not sid:
+        sid = ['S1', 'S3', 'S5', 'S6', 'S7']
+        # load classification accuracy
+        clf_acc = []
+        for subj in sid:
+            subj_file = '%s_roi_clf_acc.npy'%(subj)
+            clf_acc.append(np.load(subj_file))
+        clf_acc = np.array(clf_acc)
+        mean_acc = np.mean(np.mean(clf_acc, axis=1), axis=0)
+        # load random classification accuracy
+        rand_clf_acc = []
+        for subj in sid:
+            temp = []
+            for i in range(5):
+                subj_file = '%s_roi_clf_rand_acc_t%s.npy'%(subj, i+1)
+                temp.append(np.load(subj_file))
+            rand_clf_acc.append(temp)
+        rand_clf_acc = np.array(rand_clf_acc)
+        mean_rand_acc = np.mean(np.mean(rand_clf_acc, axis=1), axis=0)
+        acc_p = np.ones_like(mean_acc)
+        for m in range(acc_p.shape[0]):
+            for n in range(acc_p.shape[1]):
+                v = mean_acc[m, n]
+                rand_v = mean_rand_acc[:, m, n]
+                acc_p[m, n] = np.sum(rand_v > v) * 1.0 / rand_v.shape[0]
+        p_file = 'roi_clf_p.npy'
+        np.save(p_file, acc_p)
+    else:
+        pass
+
 
 if __name__=='__main__':
     root_dir = r'/nfs/diskstation/projects/emotionPro'
@@ -947,6 +979,7 @@ if __name__=='__main__':
     #p2surf(root_dir, 'S1')
 
     #roi_svm(root_dir, 'S1', 'face_roi_mprm.nii.gz')
-    roi_clf(root_dir, 'S1')
+    #roi_clf(root_dir, 'S1')
     #random_roi_clf(root_dir, 'S1', 1, 1000)
+    get_roi_clf_p(root_dir)
 
