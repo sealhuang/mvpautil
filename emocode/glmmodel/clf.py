@@ -956,8 +956,8 @@ def get_roi_clf_p(root_dir, sid=None):
                 v = mean_acc[m, n]
                 rand_v = mean_rand_acc[:, m, n]
                 acc_p[m, n] = np.sum(rand_v > v) * 1.0 / rand_v.shape[0]
-        p_file = 'roi_clf_p.npy'
-        np.save(p_file, acc_p)
+        out_file = 'roi_clf_mean_acc_p'
+        np.savez(out_file, mean_acc = mean_acc, acc_p = acc_p)
     else:
         pass
 
