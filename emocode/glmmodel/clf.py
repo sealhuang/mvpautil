@@ -690,14 +690,14 @@ def p2surf(root_dir, sid):
                        '--hemi', h, '--o', surf_file]
             os.system(' '.join(str_cmd))
 
-def roi_clf(root_dir, sid):
+def roi_clf_pair(root_dir, sid):
     """Get classification accuracy for each emotion-related ROI."""
     # dir config
     subj_dir = os.path.join(root_dir, 'workshop', 'glmmodel', 'conn', sid)
     
     # load mask file
     mask_file = os.path.join(root_dir, 'group-level', 'rois', 'power264',
-                             'sel_emotion_rois.nii.gz')
+                             'sel_emotion_modules.nii.gz')
     mask = nib.load(mask_file).get_data()
     roi_num = int(mask.max())
     acc_mtx = np.zeros((5, roi_num, 6))
@@ -785,7 +785,7 @@ def roi_clf(root_dir, sid):
                     
                     # classifier
                     # kernel can be specified as linear, poly, rbf, and sigmod
-                    kernel = 'rbf'
+                    kernel = 'linear'
                     clf = svm.SVC(kernel=kernel)
                     clf.fit(train_x, train_y)
                     pred = clf.predict(test_x)
@@ -817,7 +817,91 @@ def roi_clf(root_dir, sid):
             #    acc_mtx[r-1, c, e] = acc
     
     # save data
-    np.save('%s_roi_clf_acc.npy'%(sid), acc_mtx)
+    np.save('%s_module_clf_acc_linear.npy'%(sid), acc_mtx)
+
+def roi_clf_condition(root_dir, sid):
+    """Get classification accuracy for each emotion-related ROI."""
+    # dir config
+    subj_dir = os.path.join(root_dir, 'workshop', 'glmmodel', 'conn', sid)
+    
+    # load mask file
+    mask_file = os.path.join(root_dir, 'group-level', 'rois', 'power264',
+                             'sel_emotion_rois.nii.gz')
+    mask = nib.load(mask_file).get_data()
+    roi_num = int(mask.max())
+    acc_mtx = np.zeros((5, roi_num, 4))
+
+    # calculate classification accuracy
+    for r in range(1, 6):
+        # load estimated beta maps
+        print 'Load estimated beta maps from training datasets ...'
+        train_beta1_file = os.path.join(subj_dir,
+                                '%s_beta_train_s1_t%s_mni.nii.gz'%(sid, r))
+        train_beta2_file = os.path.join(subj_dir,
+                                '%s_beta_train_s2_t%s_mni.nii.gz'%(sid, r))
+        train_beta1 = nib.load(train_beta1_file).get_data()
+        train_beta2 = nib.load(train_beta2_file).get_data()
+        train_beta = np.concatenate((train_beta1, train_beta2), axis=3)
+        print 'Load estimated beta maps from testing datasets ...'
+        test_beta1_file = os.path.join(subj_dir,
+                                       '%s_beta_val_s1_t%s_mni.nii.gz'%(sid, r))
+        test_beta2_file = os.path.join(subj_dir,
+                                       '%s_beta_val_s2_t%s_mni.nii.gz'%(sid, r))
+        test_beta1 = nib.load(test_beta1_file).get_data()
+        test_beta2 = nib.load(test_beta2_file).get_data()
+        test_beta = np.concatenate((test_beta1, test_beta2), axis=3)
+        # data normalization
+        for i in range(8):
+            tmp = train_beta[..., (i*80):(i*80+80)]
+            m = np.mean(tmp, axis=3, keepdims=True)
+            s = np.std(tmp, axis=3, keepdims=True)
+            train_beta[..., (i*80):(i*80+80)] = (tmp - m) / (s + 1e-5)
+        for i in range(2):
+            tmp = test_beta[..., (i*80):(i*80+80)]
+            m = np.mean(tmp, axis=3, keepdims=True)
+            s = np.std(tmp, axis=3, keepdims=True)
+            test_beta[..., (i*80):(i*80+80)] = (tmp - m) / (s + 1e-5)
+        print train_beta.shape
+        print test_beta.shape
+ 
+        # get stimuli label info
+        print 'Load stimuli label info ...'
+        stim_label_list = get_stimuli_label(root_dir, sid, mode='subjective')
+        test_label = np.concatenate((stim_label_list[r-1],
+                                     stim_label_list[5+r-1]))
+        stim_label_list.pop(r-1)
+        stim_label_list.pop(5+r-2)
+        train_label = np.concatenate(tuple(item for item in stim_label_list))
+        #print train_label.shape
+        #print test_label.shape
+        
+        # for loop for roi-wise classification
+        for c in range(roi_num):
+            roi_idx = c + 1
+            cube_coord = niroi.get_roi_coord(mask==roi_idx)
+            train_x = []
+            test_x = []
+            for t in range(train_beta.shape[3]):
+                vtr = niroi.get_voxel_value(cube_coord, train_beta[..., t])
+                train_x.append(vtr.tolist())
+            for t in range(test_beta.shape[3]):
+                vtr = niroi.get_voxel_value(cube_coord, test_beta[..., t])
+                test_x.append(vtr.tolist())
+            train_x = np.array(train_x)
+            test_x = np.array(test_x)
+            # classifier
+            # kernel can be specified as linear, poly, rbf, and sigmod
+            kernel = 'rbf'
+            clf = svm.SVC(kernel=kernel)
+            clf.fit(train_x, train_label)
+            pred = clf.predict(test_x)
+            for e in range(4):
+                acc = np.sum(pred[test_label==(e+1)]==(e+1))*1.0 / np.sum(test_label==(e+1))
+                print acc
+                acc_mtx[r-1, c, e] = acc
+    
+    # save data
+    np.save('%s_module_clf_cond_acc_linear.npy'%(sid), acc_mtx)
 
 def roi_clf_csv(root_dir, sid):
     """Get classification accuracy for each emotion-related ROI."""
@@ -887,7 +971,8 @@ def roi_clf_csv(root_dir, sid):
             i = int((90.0 - float(line[3])) / 2)
             j = int((float(line[4]) + 126) / 2)
             k = int((float(line[5]) + 72) / 2)
-            mask = niroi.sphere_roi(np.zeros((91, 109, 91)), i, j, k, 3, 1)
+            mask = niroi.cube_roi(np.zeros((91, 109, 91)), i, j, k, 3, 1)
+            #mask = niroi.sphere_roi(np.zeros((91, 109, 91)), i, j, k, 3, 1)
             cube_coord = niroi.get_roi_coord(mask==1)
 
             #roi_idx = c + 1
@@ -1122,7 +1207,16 @@ if __name__=='__main__':
 
     #roi_svm(root_dir, 'S1', 'face_roi_mprm.nii.gz')
     #roi_clf(root_dir, 'S1')
-    roi_clf_csv(root_dir, 'S1')
+    #roi_clf(root_dir, 'S3')
+    #roi_clf(root_dir, 'S5')
+    #roi_clf(root_dir, 'S6')
+    #roi_clf(root_dir, 'S7')
+    roi_clf_condition(root_dir, 'S1')
+    roi_clf_condition(root_dir, 'S3')
+    roi_clf_condition(root_dir, 'S5')
+    roi_clf_condition(root_dir, 'S6')
+    roi_clf_condition(root_dir, 'S7')
+    #roi_clf_csv(root_dir, 'S3')
     #random_roi_clf(root_dir, 'S1', 1, 1000)
     #get_roi_clf_p(root_dir)
 
