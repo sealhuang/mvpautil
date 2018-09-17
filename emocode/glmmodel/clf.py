@@ -872,8 +872,6 @@ def roi_clf_condition(root_dir, sid):
         stim_label_list.pop(r-1)
         stim_label_list.pop(5+r-2)
         train_label = np.concatenate(tuple(item for item in stim_label_list))
-        #print train_label.shape
-        #print test_label.shape
         
         # for loop for roi-wise classification
         for c in range(roi_num):
