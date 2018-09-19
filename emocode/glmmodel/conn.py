@@ -40,6 +40,7 @@ def get_emo_seq(root_dir, sid, mode='objective'):
                   `subjective` ->  subject's response, 0 indicates non-response
                                    trials
                   `correct`    ->  correct trial, 0 indicates wrong response
+                                   trials
     """
     beh_dir = os.path.join(root_dir, 'beh')
     # get subject name
@@ -55,6 +56,8 @@ def get_emo_seq(root_dir, sid, mode='objective'):
         img_list = []
         # load experiment record
         record = os.path.join(beh_dir, 'trial_record_%s_run%s.csv'%(subj, i+1))
+        if not os.path.exists(record):
+            continue
         record_info = open(record, 'r').readlines()
         record_info.pop(0)
         record_info = [line.strip().split(',') for line in record_info]
@@ -193,19 +196,32 @@ def get_emo_std_ts(root_dir, sid, seq):
     """Get neural activity time course of each roi on each emotion condition."""
     subj_dir = os.path.join(root_dir, 'workshop', 'glmmodel', 'conn', sid)
 
+    # get run index for each subject
+    run_idx = {'S1': [0, 1, 2, 3, 4, 5, 6, 7 ,8 ,9],
+               'S2': [0, 1, 2, 5 ,6 ,7 ,8 ,9],
+               'S3': [0, 1, 2, 3, 4, 5 ,6 ,7, 8, 9],
+               'S4': [0, 1, 2, 3, 4],
+               'S5': [0, 1, 2, 3, 4, 5 ,6 ,7, 8, 9],
+               'S6': [0, 1, 2, 3, 4, 5 ,6 ,7, 8, 9],
+               'S7': [0, 1, 2, 3, 4, 5 ,6 ,7, 8, 9]}
+    subj_run_idx = run_idx[sid]
+    
     # load roi and betas
     rois = nib.load(os.path.join(root_dir, 'group-level', 'rois', 'power264',
-                    'power264_rois.nii.gz')).get_data()
+                    'power227plus_rois.nii.gz')).get_data()
     roi_num = int(rois.max())
+
+    # load estimated beta
     beta1_file = os.path.join(subj_dir, '%s_beta_s1_full_mni.nii.gz'%(sid))
-    beta2_file = os.path.join(subj_dir, '%s_beta_s2_full_mni.nii.gz'%(sid))
     beta1 = nib.load(beta1_file).get_data()
-    beta2 = nib.load(beta2_file).get_data()
+    beta2_file = os.path.join(subj_dir, '%s_beta_s2_full_mni.nii.gz'%(sid))
+    if os.path.exists(beta2_file):
+        beta2 = nib.load(beta2_file).get_data()
 
     # get roi time course for each emotion type
     roi_ts = [np.array([]), np.array([]), np.array([]), np.array([])]
     #roi_ts = np.zeros((4, roi_num, 200))
-    for i in range(10):
+    for i in subj_run_idx:
         if i<5:
             run_beta = beta1[..., (i*80):(i*80+80)]
         else:
@@ -229,10 +245,10 @@ def get_emo_std_ts(root_dir, sid, seq):
             else:
                 roi_ts[e] = run_roi_ts
         #roi_ts[:, :, (i*20):(i*20+20)] = run_roi_ts
-    outfile = os.path.join(subj_dir, 'roi_std_ts_227')
-    np.savez(outfile, roits_emo1=roi_ts[0], roits_emo2=roi_ts[1],
-                      roits_emo3=roi_ts[2], roits_emo4=roi_ts[3])
-    outfile = os.path.join(subj_dir, 'roi_std_ts_227.mat')
+    #outfile = os.path.join(subj_dir, 'roi_std_ts_227')
+    #np.savez(outfile, roits_emo1=roi_ts[0], roits_emo2=roi_ts[1],
+    #                  roits_emo3=roi_ts[2], roits_emo4=roi_ts[3])
+    outfile = os.path.join(subj_dir, 'roi_std_ts_227_correct.mat')
     sio.savemat(outfile, {'roits_emo1': roi_ts[0], 'roits_emo2': roi_ts[1],
                           'roits_emo3': roi_ts[2], 'roits_emo4': roi_ts[3]})
 
@@ -356,7 +372,36 @@ def power264roi(root_dir):
 
 def gen_power_roi(root_dir):
     """Make ROI file based on Power264 atlas."""
-    roi_info = open('power_rois.csv').readlines()
+    roi_info = open('sel_emotion_rois.csv').readlines()
+    roi_info.pop(0)
+    roi_info = [line.strip().split(',') for line in roi_info]
+
+    mask = np.zeros((91, 109, 91))
+    for line in roi_info:
+        i = int((90.0 - float(line[3])) / 2)
+        j = int((float(line[4]) + 126) / 2)
+        k = int((float(line[5]) + 72) / 2)
+        label = int(line[2])
+        for n_x in range(i-2, i+3):
+            for n_y in range(j-2, j+3):
+                for n_z in range(k-2, k+3):
+                    try:
+                        if mask[n_x, n_y, n_z]>0:
+                            mask[n_x, n_y, n_z] = 1000
+                        else:
+                            mask[n_x, n_y, n_z] = label
+                    except:
+                        pass
+    mask[mask==1000] = 0
+    mni_vol = os.path.join(os.environ['FSL_DIR'], 'data', 'standard',
+                           'MNI152_T1_2mm_brain.nii.gz')
+    aff = nib.load(mni_vol).affine
+    outfile ='sel_emotion_rois.nii.gz'
+    nibase.save2nifti(mask, aff, outfile)
+
+def gen_module_roi(root_dir):
+    """Make ROI file based on Power264 atlas."""
+    roi_info = open('sel_emotion_rois.csv').readlines()
     roi_info.pop(0)
     roi_info = [line.strip().split(',') for line in roi_info]
 
@@ -380,7 +425,7 @@ def gen_power_roi(root_dir):
     mni_vol = os.path.join(os.environ['FSL_DIR'], 'data', 'standard',
                            'MNI152_T1_2mm_brain.nii.gz')
     aff = nib.load(mni_vol).affine
-    outfile ='power_rois.nii.gz'
+    outfile ='sel_emotion_modules.nii.gz'
     nibase.save2nifti(mask, aff, outfile)
 
 
@@ -389,13 +434,14 @@ if __name__=='__main__':
 
     #power264roi(root_dir)
     #gen_power_roi(root_dir)
+    #gen_module_roi(root_dir)
 
     #refine_rois(root_dir)
     #func2mni(root_dir, 'S6')
     #func2mni_cv(root_dir, 'S1')
-    seq = get_emo_seq(root_dir, 'S1', mode='subjective')
-    #get_emo_ts(root_dir, 'S5', seq)
+    seq = get_emo_seq(root_dir, 'S1', mode='correct')
     get_emo_std_ts(root_dir, 'S1', seq)
+    #get_emo_ts(root_dir, 'S5', seq)
     #get_conn(root_dir, 'S7')
     #get_rand_conn(root_dir, 1000)
 
