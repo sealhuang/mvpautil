@@ -372,7 +372,7 @@ def power264roi(root_dir):
 
 def gen_power_roi(root_dir):
     """Make ROI file based on Power264 atlas."""
-    roi_info = open('sel_emotion_rois.csv').readlines()
+    roi_info = open('power227plus_rois.csv').readlines()
     roi_info.pop(0)
     roi_info = [line.strip().split(',') for line in roi_info]
 
@@ -396,7 +396,7 @@ def gen_power_roi(root_dir):
     mni_vol = os.path.join(os.environ['FSL_DIR'], 'data', 'standard',
                            'MNI152_T1_2mm_brain.nii.gz')
     aff = nib.load(mni_vol).affine
-    outfile ='sel_emotion_rois.nii.gz'
+    outfile ='power227plus_rois.nii.gz'
     nibase.save2nifti(mask, aff, outfile)
 
 def gen_module_roi(root_dir):
@@ -434,14 +434,14 @@ if __name__=='__main__':
 
     #power264roi(root_dir)
     #gen_power_roi(root_dir)
-    #gen_module_roi(root_dir)
+    gen_module_roi(root_dir)
 
     #refine_rois(root_dir)
-    #func2mni(root_dir, 'S6')
+    #func2mni(root_dir, 'S2')
     #func2mni_cv(root_dir, 'S1')
-    seq = get_emo_seq(root_dir, 'S1', mode='correct')
-    get_emo_std_ts(root_dir, 'S1', seq)
-    #get_emo_ts(root_dir, 'S5', seq)
-    #get_conn(root_dir, 'S7')
+    #seq = get_emo_seq(root_dir, 'S1', mode='correct')
+    #get_emo_std_ts(root_dir, 'S1', seq)
+    #get_emo_ts(root_dir, 'S1', seq)
+    #get_conn(root_dir, 'S1')
     #get_rand_conn(root_dir, 1000)
 
